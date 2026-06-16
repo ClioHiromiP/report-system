@@ -117,6 +117,30 @@ async function resolveReport(id) {
 
   loadReports();
 }
+  function askForAction(id, type) {
+  const action = prompt("¿Qué se hizo en la máquina?");
+
+  if (!action) return;
+
+  updateReport(id, type, action);
+}
+
+async function updateReport(id, type, action) {
+  await fetch(API + "/" + id, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      status: type === "resolved" ? "Resolved" : "Not Resolved",
+      resolvedAt: new Date().toISOString(),
+      actionTaken: action
+    })
+  });
+
+  loadReports();
+}
+
 
 function timeAgo(date) {
   const diff = Math.floor((new Date() - new Date(date)) / 60000);
@@ -249,6 +273,10 @@ async function loadReports() {
           ${r.resolvedAt 
             ? `Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
             : ""
+
+            ${r.actionTaken ? `<br>🔧 Acción: ${r.actionTaken}` : ""}
+              ${r.status === "Not Resolved" ? `<br>⚠️ No resuelto` : ""}
+
           }
 
           ${r.resolvedAt 
@@ -257,10 +285,15 @@ async function loadReports() {
           }
         </div>
 
+     
         ${r.status === "Pending"
-          ? `<button onclick="resolveReport(${r.id})">Marcar como Resuelto</button>`
-          : ""
-        }
+        ? `
+        <button onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
+      <button onclick="askForAction(${r.id}, 'not')">❌ No Resuelto</button>
+  `
+  : ""
+}
+
       `;
 
       content.appendChild(div);
