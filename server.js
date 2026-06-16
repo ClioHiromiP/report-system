@@ -39,10 +39,16 @@ app.get("/reports", (req, res) => {
     const files = fs.readdirSync(DATA_FOLDER);
 
     files.forEach(file => {
-      const data = JSON.parse(
-        fs.readFileSync(path.join(DATA_FOLDER, file))
-      );
-      allReports = allReports.concat(data);
+      const filePath = path.join(DATA_FOLDER, file);
+
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath);
+
+        if (content.length > 0) {
+          const data = JSON.parse(content);
+          allReports = allReports.concat(data);
+        }
+      }
     });
   }
 
@@ -56,7 +62,10 @@ app.post("/reports", (req, res) => {
   let reports = [];
 
   if (fs.existsSync(file)) {
-    reports = JSON.parse(fs.readFileSync(file));
+    const content = fs.readFileSync(file);
+    if (content.length > 0) {
+      reports = JSON.parse(content);
+    }
   }
 
   const newReport = {
@@ -70,11 +79,34 @@ app.post("/reports", (req, res) => {
   res.json(newReport);
 });
 
-// ✅ actualizar (resolver / no resuelto)
+// ✅ actualizar (resolver / no resuelto / pendiente)
 app.put("/reports/:id", (req, res) => {
+
+  if (!fs.existsSync(DATA_FOLDER)) {
+    return res.sendStatus(200);
+  }
+
   const files = fs.readdirSync(DATA_FOLDER);
 
   files.forEach(file => {
     const filePath = path.join(DATA_FOLDER, file);
-    let reports = JSON.parse(fs.readFileSync(filePath));
 
+    if (fs.existsSync(filePath)) {
+      let reports = JSON.parse(fs.readFileSync(filePath));
+
+      reports = reports.map(r =>
+        r.id == req.params.id ? { ...r, ...req.body } : r
+      );
+
+      fs.writeFileSync(filePath, JSON.stringify(reports, null, 2));
+    }
+  });
+
+  res.sendStatus(200);
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
+});
