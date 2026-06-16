@@ -7,22 +7,46 @@
     body {
       font-family: Arial;
       background-color: #f4f8fc;
-      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: #0f4c81;
     }
 
     .container {
       width: 500px;
-      margin: auto;
       background: white;
       padding: 20px;
       margin-top: 20px;
       border-radius: 10px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      background-color: #0f4c81;
+      color: white;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+      width: 100%;
     }
 
     .report {
-      border: 1px solid #ccc;
+      border-left: 5px solid #0f4c81;
+      background: #f9f9f9;
       margin-top: 10px;
       padding: 10px;
+      border-radius: 5px;
     }
   </style>
 </head>
@@ -32,14 +56,14 @@
 <div class="container">
   <h1>Crear Reporte</h1>
 
-  <input id="title" placeholder="Título"><br><br>
-  <textarea id="desc" placeholder="Descripción"></textarea><br><br>
+  <input id="title" placeholder="Título">
+  <textarea id="desc" placeholder="Descripción"></textarea>
 
   <select id="priority">
     <option>Alta</option>
-    <option>Media</option>
+    <option selected>Media</option>
     <option>Baja</option>
-  </select><br><br>
+  </select>
 
   <button onclick="addReport()">Enviar</button>
 </div>
@@ -56,12 +80,12 @@ let lastIds = new Set();
 
 window.onload = () => {
 
-  // ✅ NOTIFICACIONES
+  // 🔔 NOTIFICACIONES
   if ("Notification" in window) {
     Notification.requestPermission();
   }
 
-  // ✅ SONIDO (después de click)
+  // 🔊 SONIDO
   let sound;
   document.addEventListener("click", () => {
     sound = new Audio("https://www.myinstants.com/media/sounds/bell.mp3");
@@ -83,9 +107,7 @@ window.onload = () => {
 
     document.body.appendChild(alertBox);
 
-    setTimeout(() => {
-      alertBox.remove();
-    }, 10000);
+    setTimeout(() => alertBox.remove(), 8000);
   }
 
   async function loadReports() {
@@ -93,22 +115,18 @@ window.onload = () => {
     const data = await res.json();
 
     const list = document.getElementById("list");
-
-    // ✅ FIX CRÍTICO
     if (!list) return;
 
     list.innerHTML = "";
 
     data.reverse().forEach(r => {
 
-      if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
+      // ✅ ALERTA SOLO NUEVOS
+      if (!lastIds.has(r.id)) {
 
         if (sound) sound.play().catch(() => {});
-
         if (Notification.permission === "granted") {
-          new Notification("Nuevo reporte", {
-            body: r.title
-          });
+          new Notification("Nuevo reporte", { body: r.title });
         }
 
         showAlert(r.title);
@@ -120,9 +138,9 @@ window.onload = () => {
       div.className = "report";
 
       div.innerHTML = `
-        <b>${r.title}</b><br>
+        <b>${r.title}</b> (${r.priority})<br>
         ${r.description}<br>
-        <b>Estatus:</b> ${r.status}
+        <b>Estatus:</b> ${r.status}<br>
       `;
 
       list.appendChild(div);
@@ -138,9 +156,7 @@ window.onload = () => {
 
     await fetch(API, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title,
         description,
@@ -150,6 +166,10 @@ window.onload = () => {
         createdAt: new Date().toISOString()
       })
     });
+
+    // limpiar inputs
+    document.getElementById("title").value = "";
+    document.getElementById("desc").value = "";
   }
 
   setInterval(loadReports, 2000);
