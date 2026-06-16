@@ -83,9 +83,10 @@
   </select>
 
   <label>Asignado a</label>
-  <select id="assignedTo">
-    <option value="Procesos" selected>Procesos</option>
-  </select>
+<select id="assignedTo">
+  assignedTo: document.getElementById("assignedTo").value,
+    <option selected>Procesos</option>
+</select>
 
   <button onclick="addReport()">Enviar Reporte</button>
 </div>
@@ -117,18 +118,45 @@ async function resolveReport(id) {
 
   loadReports();
 }
+``
+
+function timeAgo(date) {
+  const diff = Math.floor((new Date() - new Date(date)) / 60000);
+
+  if (diff < 1) return "Justo ahora";
+  if (diff < 60) return diff + " min atrás";
+
+  const hours = Math.floor(diff / 60);
+  if (hours < 24) return hours + " hr atrás";
+
+  const days = Math.floor(hours / 24);
+  return days + " día(s)";
+}
+
+function resolutionTime(start, end) {
+  if (!end) return "";
+
+  const diff = Math.floor((new Date(end) - new Date(start)) / 60000);
+
+  if (diff < 1) return "Resuelto inmediatamente";
+  if (diff < 60) return "Resuelto en " + diff + " min";
+
+  const hours = Math.floor(diff / 60);
+  return "Resuelto en " + hours + " hr";
+}
+``
 
 // 🔔 VARIABLES DE CONTROL
 let lastIds = new Set();
 
-// 🔊 SONIDO
+// 🔊 SONIDO (se activa después de un click)
 let notifSound;
 document.addEventListener("click", () => {
   notifSound = new Audio("https://www.myinstants.com/media/sounds/bell.mp3");
   notifSound.volume = 1.0;
 }, { once: true });
 
-// 🪟 NOTIFICACIONES
+// 🪟 PEDIR PERMISO DE NOTIFICACIONES
 if ("Notification" in window) {
   Notification.requestPermission();
 }
@@ -166,43 +194,57 @@ async function loadReports() {
   list.innerHTML = "";
 
   data.reverse().forEach(r => {
+    // ✅ DETECTAR NUEVOS REPORTES SOLO PARA PROCESOS
+if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
 
-    // ✅ NOTIFICACIONES SOLO PARA PROCESOS
-    if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
+  // 🔔 sonido
+  if (notifSound) {
+    notifSound.play().catch(() => {});
+  }
 
-      if (notifSound) {
-        notifSound.play().catch(() => {});
-      }
+  // 🪟 notificación del sistema
+  if (Notification.permission === "granted") {
+    new Notification("Nuevo reporte para Procesos", {
+      body: r.title
+    });
+  }
 
-      if (Notification.permission === "granted") {
-        new Notification("Nuevo reporte para Procesos", {
-          body: r.title
-        });
-      }
+  // 🚨 alerta visual
+  showAlert(r.title);
+}
 
-      showAlert(r.title);
-    }
-
-    lastIds.add(r.id);
+lastIds.add(r.id);
 
     const div = document.createElement("div");
     div.className = "report";
 
     div.innerHTML = `
-      <b>${r.title}</b> (${r.priority})<br>
-      ${r.description}<br>
-      <b>Asignado a:</b> ${r.assignedTo}<br>
-      <b>Estatus:</b> ${r.status}<br>
+  <b>${r.title}</b> (${r.priority})<br>
+  ${r.description}<br>
+  <b>Asignado a:</b> ${r.assignedTo}<br>
+  <b>Estatus:</b> ${r.status}<br>
 
-      <div class="small">
-        Creado: ${new Date(r.createdAt).toLocaleString()}
-      </div>
+<div class="small">
+  Creado: ${new Date(r.createdAt).toLocaleString()}<br>
+  ⏱ ${timeAgo(r.createdAt)}<br>
 
-      ${r.status === "Pending"
-        ? `<button onclick="resolveReport(${r.id})">Marcar como Resuelto</button>`
-        : ""
-      }
-    `;
+  ${r.resolvedAt 
+    ? `Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
+    : ""
+  }
+
+  ${r.resolvedAt 
+    ? `✅ ${resolutionTime(r.createdAt, r.resolvedAt)}`
+    : ""
+  }
+</div>
+
+  ${r.status === "Pending"
+    ? `<button onclick="resolveReport(${r.id})">Marcar como Resuelto</button>`
+    : ""
+  }
+`;
+
 
     list.appendChild(div);
   });
@@ -212,7 +254,6 @@ async function addReport() {
   const title = document.getElementById("title").value;
   const description = document.getElementById("desc").value;
   const priority = document.getElementById("priority").value;
-  const assignedTo = document.getElementById("assignedTo").value;
 
   if (!title || !description) {
     alert("Llena todos los campos");
@@ -228,15 +269,17 @@ async function addReport() {
       title,
       description,
       priority,
-      assignedTo,
+      assignedTo: "Procesos",
       status: "Pending",
       createdAt: new Date().toISOString()
     })
   });
 
+  // limpiar campos
   document.getElementById("title").value = "";
   document.getElementById("desc").value = "";
 
+  // actualizar lista
   loadReports();
 }
 </script>
