@@ -96,13 +96,13 @@
 const API = "https://report-system-ah71.onrender.com/reports";
 
 let openedDays = JSON.parse(localStorage.getItem("openedDays")) || {};
-let lastIds = new Set();
 
 window.onload = () => {
   loadReports();
   setInterval(loadReports, 2000);
 };
 
+// ✅ FORMULARIO DE ACCIÓN
 function askForAction(id, type) {
   const action = prompt("Describe qué se hizo, cambió o por qué sigue pendiente");
 
@@ -114,6 +114,7 @@ function askForAction(id, type) {
   updateReport(id, type, action);
 }
 
+// ✅ ACTUALIZAR REPORTE
 async function updateReport(id, type, action) {
   let status = "Pending";
 
@@ -134,14 +135,15 @@ async function updateReport(id, type, action) {
   loadReports();
 }
 
+// ✅ TIEMPO TRANSCURRIDO
 function timeAgo(date) {
   const diff = Math.floor((new Date() - new Date(date)) / 60000);
   if (diff < 1) return "Justo ahora";
   if (diff < 60) return diff + " min atrás";
-  const h = Math.floor(diff / 60);
-  return h + " hr atrás";
+  return Math.floor(diff / 60) + " hr atrás";
 }
 
+// ✅ TIEMPO RESOLUCIÓN
 function resolutionTime(start, end) {
   if (!end) return "";
   const diff = Math.floor((new Date(end) - new Date(start)) / 60000);
@@ -149,7 +151,7 @@ function resolutionTime(start, end) {
   return "Resuelto en " + Math.floor(diff / 60) + " hr";
 }
 
-// ✅ LOAD REPORTS
+// ✅ CARGAR REPORTES
 async function loadReports() {
   const res = await fetch(API);
   const data = await res.json();
@@ -208,9 +210,7 @@ async function loadReports() {
       content.appendChild(div);
     });
 
-    const header = section.querySelector("h3");
-
-    header.onclick = () => {
+    section.querySelector("h3").onclick = () => {
       const isOpen = content.style.display === "none";
       content.style.display = isOpen ? "block" : "none";
       openedDays[date] = isOpen;
@@ -221,6 +221,7 @@ async function loadReports() {
   });
 }
 
+// ✅ CREAR REPORTE
 async function addReport() {
   const title = document.getElementById("title").value;
   const description = document.getElementById("desc").value;
