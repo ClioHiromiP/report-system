@@ -168,11 +168,6 @@ if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
   // 🔔 sonido
   if (notifSound) {
     notifSound.play().catch(() => {});
-
-    ${r.status === "Pending"
-  ? `<button onclick="resolveReport(${r.id})">Marcar como Resuelto</button>`
-  : ""
-}
   }
 
   // 🪟 notificación del sistema
@@ -192,14 +187,21 @@ lastIds.add(r.id);
     div.className = "report";
 
     div.innerHTML = `
-      <b>${r.title}</b> (${r.priority})<br>
-      ${r.description}<br>
-      <b>Asignado a:</b> ${r.assignedTo}<br>
-      <b>Estatus:</b> ${r.status}<br>
-      <div class="small">
-        ${new Date(r.createdAt).toLocaleString()}
-      </div>
-    `;
+  <b>${r.title}</b> (${r.priority})<br>
+  ${r.description}<br>
+  <b>Asignado a:</b> ${r.assignedTo}<br>
+  <b>Estatus:</b> ${r.status}<br>
+
+  <div class="small">
+    Creado: ${new Date(r.createdAt).toLocaleString()}
+  </div>
+
+  ${r.status === "Pending"
+    ? `<button onclick="resolveReport(${r.id})">Marcar como Resuelto</button>`
+    : ""
+  }
+`;
+
 
     list.appendChild(div);
   });
