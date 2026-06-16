@@ -168,6 +168,11 @@ if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
   // 🔔 sonido
   if (notifSound) {
     notifSound.play().catch(() => {});
+
+    ${r.status === "Pending"
+  ? `<button onclick="resolveReport(${r.id})">Marcar como Resuelto</button>`
+  : ""
+}
   }
 
   // 🪟 notificación del sistema
