@@ -7,69 +7,63 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ IMPORTANT: serve your frontend (index.html)
-app.use(express.static(__dirname));
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
-
-// 📁 folder for reports by day
 const DATA_FOLDER = "./data";
 
+// crear carpeta si no existe
 if (!fs.existsSync(DATA_FOLDER)) {
   fs.mkdirSync(DATA_FOLDER);
 }
 
-// ⏱ 1 week
+// ⏱ 7 días
 const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
 
-// ✅ file name by day
-const getTodayFile = () => {
+// 📅 archivo por día
+function getTodayFile() {
   const d = new Date();
   return path.join(
     DATA_FOLDER,
-    `${d.getMonth() + 1}-${d.getDate()}-${String(d.getFullYear()).slice(-2)}.json`
+    `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}.json`
   );
-};
+}
 
-// ✅ read all reports
-const getAllReports = () => {
-  const files = fs.readdirSync(DATA_FOLDER);
-  let reports = [];
+// ✅ eliminar archivos viejos
+function cleanOldFiles() {
+  if (!fs.existsSync(DATA_FOLDER)) return;
 
-  files.forEach((file) => {
-    const data = JSON.parse(
-      fs.readFileSync(path.join(DATA_FOLDER, file))
-    );
-    reports = reports.concat(data);
-  });
-
-  return reports;
-};
-
-// ✅ delete old files (older than 7 days)
-const cleanOldFiles = () => {
   const files = fs.readdirSync(DATA_FOLDER);
   const now = Date.now();
 
-  files.forEach((file) => {
+  files.forEach(file => {
     const filePath = path.join(DATA_FOLDER, file);
     const stats = fs.statSync(filePath);
 
-    if (now - stats.mtime.getTime() > ONE_WEEK) {
+    if (now - stats.mtimeMs > ONE_WEEK) {
       fs.unlinkSync(filePath);
     }
   });
-};
+}
 
-// ✅ GET reports
+// ✅ obtener todos
 app.get("/reports", (req, res) => {
   cleanOldFiles();
-  res.json(getAllReports());
+
+  let allReports = [];
+
+  if (fs.existsSync(DATA_FOLDER)) {
+    const files = fs.readdirSync(DATA_FOLDER);
+
+    files.forEach(file => {
+      const data = JSON.parse(
+        fs.readFileSync(path.join(DATA_FOLDER, file))
+      );
+      allReports = allReports.concat(data);
+    });
+  }
+
+  res.json(allReports);
 });
 
-// ✅ POST report
+// ✅ crear reporte
 app.post("/reports", (req, res) => {
   cleanOldFiles();
 
@@ -82,25 +76,24 @@ app.post("/reports", (req, res) => {
 
   const newReport = {
     id: Date.now(),
-    ...req.body,
+    ...req.body
   };
 
   reports.push(newReport);
-
   fs.writeFileSync(file, JSON.stringify(reports, null, 2));
 
   res.json(newReport);
 });
 
-// ✅ UPDATE report
+// ✅ actualizar (resolver)
 app.put("/reports/:id", (req, res) => {
   const files = fs.readdirSync(DATA_FOLDER);
 
-  files.forEach((file) => {
+  files.forEach(file => {
     const filePath = path.join(DATA_FOLDER, file);
     let reports = JSON.parse(fs.readFileSync(filePath));
 
-    reports = reports.map((r) =>
+    reports = reports.map(r =>
       r.id == req.params.id ? { ...r, ...req.body } : r
     );
 
@@ -110,7 +103,6 @@ app.put("/reports/:id", (req, res) => {
   res.sendStatus(200);
 });
 
-// ✅ PORT (IMPORTANT for Render)
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
