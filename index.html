@@ -96,125 +96,151 @@
     <div id="list"></div>
   </div>
 
-  <script>
-const API = "https://report-system-ah71.onrender.com/reports";
+<script>
+  const API = "https://report-system-ah71.onrender.com/reports";
 
-    function timeAgo(date) {
-      const now = new Date();
-      const past = new Date(date);
-      const diff = Math.floor((now - past) / 60000);
+  let lastIds = new Set();
 
-      if (diff < 1) return "Justo ahora";
-      if (diff < 60) return diff + " min";
+  // 🔔 solicitar permisos de notificaciones
+  if ("Notification" in window) {
+    Notification.requestPermission();
+  }
 
-      const hours = Math.floor(diff / 60);
-      if (hours < 24) return hours + " hr";
+  // 🔊 sonido fuerte
+  const sound = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
+  sound.volume = 1.0;
 
-      const days = Math.floor(hours / 24);
-      return days + " día(s)";
-    }
+  function timeAgo(date) {
+    const now = new Date();
+    const past = new Date(date);
+    const diff = Math.floor((now - past) / 60000);
 
-    function resolutionTime(created, resolved) {
-      if (!resolved) return "";
+    if (diff < 1) return "Justo ahora";
+    if (diff < 60) return diff + " min";
 
-      const diff = Math.floor((new Date(resolved) - new Date(created)) / 60000);
+    const hours = Math.floor(diff / 60);
+    if (hours < 24) return hours + " hr";
 
-      if (diff < 1) return "Resuelto inmediatamente";
-      if (diff < 60) return "Resuelto en " + diff + " min";
+    const days = Math.floor(hours / 24);
+    return days + " día(s)";
+  }
 
-      const hours = Math.floor(diff / 60);
-      return "Resuelto en " + hours + " hr";
-    }
+  function resolutionTime(created, resolved) {
+    if (!resolved) return "";
 
-    async function loadReports() {
-      const res = await fetch(API);
-      const data = await res.json();
+    const diff = Math.floor((new Date(resolved) - new Date(created)) / 60000);
 
-      const list = document.getElementById("list");
-      list.innerHTML = "";
+    if (diff < 1) return "Resuelto inmediatamente";
+    if (diff < 60) return "Resuelto en " + diff + " min";
 
-      data.reverse().forEach(r => {
-        const div = document.createElement("div");
-        div.className = "report";
+    const hours = Math.floor(diff / 60);
+    return "Resuelto en " + hours + " hr";
+  }
 
-        div.innerHTML = `
-          <b>${r.title}</b> (${r.priority})<br>
-          ${r.description}<br>
-          <b>Asignado:</b> ${r.assignedTo}<br>
-          <b>Estatus:</b> ${r.status}<br>
+  async function loadReports() {
+    const res = await fetch(API);
+    const data = await res.json();
 
-          <div class="small">
-            Creado: ${new Date(r.createdAt).toLocaleString()}<br>
-            ⏱ Creado hace ${timeAgo(r.createdAt)}<br>
+    const list = document.getElementById("list");
+    list.innerHTML = "";
 
-            ${r.resolvedAt 
-              ? `Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
-              : ""
-            }
+    data.reverse().forEach(r => {
 
-            ${r.resolvedAt 
-              ? `✅ ${resolutionTime(r.createdAt, r.resolvedAt)}`
-              : ""
-            }
-          </div>
+      // ✅ NOTIFICACIÓN SOLO PARA PROCESOS Y SOLO NUEVOS
+      if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
 
-          ${r.status === "Pending"
-            ? `<button onclick="resolve(${r.id})">Marcar como Resuelto</button>`
+        // 🔔 sonido
+        sound.play().catch(() => {});
+
+        // 🪟 popup
+        if (Notification.permission === "granted") {
+          new Notification("Nuevo reporte para Procesos", {
+            body: r.title
+          });
+        }
+      }
+
+      lastIds.add(r.id);
+
+      const div = document.createElement("div");
+      div.className = "report";
+
+      div.innerHTML = `
+        <b>${r.title}</b> (${r.priority})<br>
+        ${r.description}<br>
+        <b>Asignado:</b> ${r.assignedTo}<br>
+        <b>Estatus:</b> ${r.status}<br>
+
+        <div class="small">
+          Creado: ${new Date(r.createdAt).toLocaleString()}<br>
+          ⏱ Creado hace ${timeAgo(r.createdAt)}<br>
+
+          ${r.resolvedAt 
+            ? `Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
             : ""
           }
-        `;
 
-        list.appendChild(div);
-      });
-    }
+          ${r.resolvedAt 
+            ? `✅ ${resolutionTime(r.createdAt, r.resolvedAt)}` 
+            : ""
+          }
+        </div>
 
-    async function addReport() {
-      const title = document.getElementById("title").value;
-      const description = document.getElementById("desc").value;
-      const priority = document.getElementById("priority").value;
-      const assignedTo = document.getElementById("team").value;
+        ${r.status === "Pending"
+          ? `<button onclick="resolve(${r.id})">Marcar como Resuelto</button>`
+          : ""
+        }
+      `;
 
-      if (!title || !description) return;
+      list.appendChild(div);
+    });
+  }
 
-      await fetch(API, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          priority,
-          assignedTo,
-          status: "Pending",
-          createdAt: new Date().toISOString()
-        })
-      });
+  async function addReport() {
+    const title = document.getElementById("title").value;
+    const description = document.getElementById("desc").value;
+    const priority = document.getElementById("priority").value;
+    const assignedTo = document.getElementById("team").value;
 
-      document.getElementById("title").value = "";
-      document.getElementById("desc").value = "";
+    if (!title || !description) return;
 
-      loadReports();
-    }
+    await fetch(API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title,
+        description,
+        priority,
+        assignedTo,
+        status: "Pending",
+        createdAt: new Date().toISOString()
+      })
+    });
 
-    async function resolve(id) {
-      await fetch(API + "/" + id, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          status: "Resolved",
-          resolvedAt: new Date().toISOString()
-        })
-      });
+    document.getElementById("title").value = "";
+    document.getElementById("desc").value = "";
+  }
 
-      loadReports();
-    }
+  async function resolve(id) {
+    await fetch(API + "/" + id, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        status: "Resolved",
+        resolvedAt: new Date().toISOString()
+      })
+    });
+  }
 
-    setInterval(loadReports, 5000);
-    loadReports();
-  </script>
+  // ⚡ actualización cada 2 segundos
+  setInterval(loadReports, 2000);
+
+  loadReports();
+</script>
 
 </body>
 </html>
