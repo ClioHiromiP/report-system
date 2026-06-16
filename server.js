@@ -7,6 +7,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ✅ SERVIR EL FRONTEND (ESTO ES LO QUE FALTABA)
+app.use(express.static(__dirname));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
 const DATA_FOLDER = "./data";
 
 // crear carpeta si no existe
