@@ -98,25 +98,42 @@ window.onload = () => {
   setInterval(loadReports, 2000);
 };
 
-function timeAgo(date) {
-  const diff = Math.floor((new Date() - new Date(date)) / 60000);
+// 🔔 VARIABLES DE CONTROL
+let lastIds = new Set();
 
-  if (diff < 1) return "justo ahora";
-  if (diff < 60) return diff + " min atrás";
+// 🔊 SONIDO (se activa después de un click)
+let notifSound;
+document.addEventListener("click", () => {
+  notifSound = new Audio("https://www.myinstants.com/media/sounds/bell.mp3");
+  notifSound.volume = 1.0;
+}, { once: true });
 
-  const h = Math.floor(diff / 60);
-  return h + " hr atrás";
+// 🪟 PEDIR PERMISO DE NOTIFICACIONES
+if ("Notification" in window) {
+  Notification.requestPermission();
 }
 
-// ⏱ tiempo de resolución
-function resolutionTime(start, end) {
-  if (!end) return "";
+// 🚨 ALERTA VISUAL
+function showAlert(text) {
+  const alertBox = document.createElement("div");
 
-  const diff = Math.floor((new Date(end) - new Date(start)) / 60000);
+  alertBox.innerHTML = "🚨 NUEVO REPORTE PARA PROCESOS 🚨<br>" + text;
 
-  if (diff < 60) return "Resuelto en " + diff + " min";
+  alertBox.style.position = "fixed";
+  alertBox.style.top = "20px";
+  alertBox.style.right = "20px";
+  alertBox.style.background = "red";
+  alertBox.style.color = "white";
+  alertBox.style.padding = "15px";
+  alertBox.style.fontSize = "16px";
+  alertBox.style.borderRadius = "10px";
+  alertBox.style.zIndex = "9999";
 
-  return "Resuelto en " + Math.floor(diff / 60) + " hr";
+  document.body.appendChild(alertBox);
+
+  setTimeout(() => {
+    alertBox.remove();
+  }, 8000);
 }
 
 async function loadReports() {
@@ -129,6 +146,26 @@ async function loadReports() {
   list.innerHTML = "";
 
   data.reverse().forEach(r => {
+    // ✅ DETECTAR NUEVOS REPORTES SOLO PARA PROCESOS
+if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
+
+  // 🔔 sonido
+  if (notifSound) {
+    notifSound.play().catch(() => {});
+  }
+
+  // 🪟 notificación del sistema
+  if (Notification.permission === "granted") {
+    new Notification("Nuevo reporte para Procesos", {
+      body: r.title
+    });
+  }
+
+  // 🚨 alerta visual
+  showAlert(r.title);
+}
+
+lastIds.add(r.id);
 
     const div = document.createElement("div");
     div.className = "report";
@@ -138,26 +175,9 @@ async function loadReports() {
       ${r.description}<br>
       <b>Asignado a:</b> ${r.assignedTo}<br>
       <b>Estatus:</b> ${r.status}<br>
-
       <div class="small">
-        Creado: ${new Date(r.createdAt).toLocaleString()}<br>
-        ⏱ ${timeAgo(r.createdAt)}<br>
-
-        ${r.resolvedAt 
-          ? `Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
-          : ""
-        }
-
-        ${r.resolvedAt 
-          ? `✅ ${resolutionTime(r.createdAt, r.resolvedAt)}`
-          : ""
-        }
+        ${new Date(r.createdAt).toLocaleString()}
       </div>
-
-      ${r.status === "Pending"
-        ? `<button onclick="resolveReport(${r.id})">Marcar como Resuelto</button>`
-        : ""
-      }
     `;
 
     list.appendChild(div);
@@ -189,25 +209,11 @@ async function addReport() {
     })
   });
 
+  // limpiar campos
   document.getElementById("title").value = "";
   document.getElementById("desc").value = "";
 
-  loadReports();
-}
-
-// ✅ BOTÓN RESUELTO
-async function resolveReport(id) {
-  await fetch(API + "/" + id, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      status: "Resolved",
-      resolvedAt: new Date().toISOString()
-    })
-  });
-
+  // actualizar lista
   loadReports();
 }
 </script>
