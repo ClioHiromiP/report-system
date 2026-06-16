@@ -1,246 +1,174 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Sistema de Reportes</title>
-
-  <style>
-    body {
-      font-family: Arial;
-      background-color: #f4f8fc;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin: 0;
-    }
-
-    h1 {
-      color: #0f4c81;
-      text-align: center;
-    }
-
-    .container {
-      width: 500px;
-      background: white;
-      padding: 20px;
-      margin-top: 20px;
-      border-radius: 10px;
-      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
-    }
-
-    input, textarea, select {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      margin-bottom: 15px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-
-    button {
-      background-color: #0f4c81;
-      color: white;
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    button:hover {
-      background-color: #08365d;
-    }
-
-    .report {
-      border: 1px solid #ddd;
-      border-left: 5px solid #0f4c81;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 6px;
-    }
-
-    .small {
-      font-size: 12px;
-      color: gray;
-    }
-  </style>
-</head>
-
-<body>
-
-  <div class="container">
-    <h1>Crear Reporte</h1>
-
-    <label>Título</label>
-    <input id="title">
-
-    <label>Descripción</label>
-    <textarea id="desc"></textarea>
-
-    <label>Prioridad</label>
-    <select id="priority">
-      <option>Alta</option>
-      <option selected>Media</option>
-      <option>Baja</option>
-    </select>
-
-    <label>Asignado a</label>
-    <select id="team">
-      <option>Procesos</option>
-    </select>
-
-    <button onclick="addReport()">Enviar Reporte</button>
-  </div>
-
-  <div class="container">
-    <h1>Reportes</h1>
-    <div id="list"></div>
-  </div>
-
 <script>
-  const API = "https://report-system-ah71.onrender.com/reports";
+const API = "https://report-system-ah71.onrender.com/reports";
 
-  let lastIds = new Set();
+let lastIds = new Set();
 
-  // 🔔 solicitar permisos de notificaciones
-  if ("Notification" in window) {
-    Notification.requestPermission();
-  }
+// 🔔 pedir permiso de notificaciones
+if ("Notification" in window) {
+  Notification.requestPermission();
+}
 
-  // 🔊 sonido fuerte
-  const sound = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
+// 🔊 activar sonido después de un click
+let sound;
+document.body.addEventListener("click", () => {
+  sound = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
   sound.volume = 1.0;
+}, { once: true });
 
-  function timeAgo(date) {
-    const now = new Date();
-    const past = new Date(date);
-    const diff = Math.floor((now - past) / 60000);
+// 🚨 crear alerta visual
+function showAlert(text) {
+  const alertBox = document.createElement("div");
 
-    if (diff < 1) return "Justo ahora";
-    if (diff < 60) return diff + " min";
+  alertBox.innerHTML = "🚨 NUEVO REPORTE PARA PROCESOS 🚨<br>" + text;
 
-    const hours = Math.floor(diff / 60);
-    if (hours < 24) return hours + " hr";
+  alertBox.style.position = "fixed";
+  alertBox.style.top = "20px";
+  alertBox.style.right = "20px";
+  alertBox.style.background = "red";
+  alertBox.style.color = "white";
+  alertBox.style.padding = "15px";
+  alertBox.style.fontSize = "18px";
+  alertBox.style.borderRadius = "10px";
+  alertBox.style.zIndex = "9999";
 
-    const days = Math.floor(hours / 24);
-    return days + " día(s)";
-  }
+  document.body.appendChild(alertBox);
 
-  function resolutionTime(created, resolved) {
-    if (!resolved) return "";
+  setTimeout(() => {
+    alertBox.remove();
+  }, 10000);
+}
 
-    const diff = Math.floor((new Date(resolved) - new Date(created)) / 60000);
+function timeAgo(date) {
+  const now = new Date();
+  const past = new Date(date);
+  const diff = Math.floor((now - past) / 60000);
 
-    if (diff < 1) return "Resuelto inmediatamente";
-    if (diff < 60) return "Resuelto en " + diff + " min";
+  if (diff < 1) return "Justo ahora";
+  if (diff < 60) return diff + " min";
 
-    const hours = Math.floor(diff / 60);
-    return "Resuelto en " + hours + " hr";
-  }
+  const hours = Math.floor(diff / 60);
+  if (hours < 24) return hours + " hr";
 
-  async function loadReports() {
-    const res = await fetch(API);
-    const data = await res.json();
+  const days = Math.floor(hours / 24);
+  return days + " día(s)";
+}
 
-    const list = document.getElementById("list");
-    list.innerHTML = "";
+function resolutionTime(created, resolved) {
+  if (!resolved) return "";
 
-    data.reverse().forEach(r => {
+  const diff = Math.floor((new Date(resolved) - new Date(created)) / 60000);
 
-      // ✅ NOTIFICACIÓN SOLO PARA PROCESOS Y SOLO NUEVOS
-      if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
+  if (diff < 1) return "Resuelto inmediatamente";
+  if (diff < 60) return "Resuelto en " + diff + " min";
 
-        // 🔔 sonido
-        sound.play().catch(() => {});
+  const hours = Math.floor(diff / 60);
+  return "Resuelto en " + hours + " hr";
+}
 
-        // 🪟 popup
-        if (Notification.permission === "granted") {
-          new Notification("Nuevo reporte para Procesos", {
-            body: r.title
-          });
-        }
+async function loadReports() {
+  const res = await fetch(API);
+  const data = await res.json();
+
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  data.reverse().forEach(r => {
+
+    // ✅ detectar reporte nuevo solo PROCESOS
+    if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
+
+      // 🔔 sonido
+      if (sound) sound.play();
+
+      // 🪟 notificación sistema
+      if (Notification.permission === "granted") {
+        new Notification("Nuevo reporte", {
+          body: r.title
+        });
       }
 
-      lastIds.add(r.id);
+      // 🚨 alerta visual GRANDE
+      showAlert(r.title);
+    }
 
-      const div = document.createElement("div");
-      div.className = "report";
+    lastIds.add(r.id);
 
-      div.innerHTML = `
-        <b>${r.title}</b> (${r.priority})<br>
-        ${r.description}<br>
-        <b>Asignado:</b> ${r.assignedTo}<br>
-        <b>Estatus:</b> ${r.status}<br>
+    const div = document.createElement("div");
+    div.className = "report";
 
-        <div class="small">
-          Creado: ${new Date(r.createdAt).toLocaleString()}<br>
-          ⏱ Creado hace ${timeAgo(r.createdAt)}<br>
+    div.innerHTML = `
+      <b>${r.title}</b> (${r.priority})<br>
+      ${r.description}<br>
+      <b>Asignado:</b> ${r.assignedTo}<br>
+      <b>Estatus:</b> ${r.status}<br>
 
-          ${r.resolvedAt 
-            ? `Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
-            : ""
-          }
+      <div class="small">
+        Creado: ${new Date(r.createdAt).toLocaleString()}<br>
+        ⏱ Creado hace ${timeAgo(r.createdAt)}<br>
 
-          ${r.resolvedAt 
-            ? `✅ ${resolutionTime(r.createdAt, r.resolvedAt)}` 
-            : ""
-          }
-        </div>
-
-        ${r.status === "Pending"
-          ? `<button onclick="resolve(${r.id})">Marcar como Resuelto</button>`
+        ${r.resolvedAt 
+          ? `Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
           : ""
         }
-      `;
 
-      list.appendChild(div);
-    });
-  }
+        ${r.resolvedAt 
+          ? `✅ ${resolutionTime(r.createdAt, r.resolvedAt)}`
+          : ""
+        }
+      </div>
 
-  async function addReport() {
-    const title = document.getElementById("title").value;
-    const description = document.getElementById("desc").value;
-    const priority = document.getElementById("priority").value;
-    const assignedTo = document.getElementById("team").value;
+      ${r.status === "Pending"
+        ? `<button onclick="resolve(${r.id})">Marcar como Resuelto</button>`
+        : ""
+      }
+    `;
 
-    if (!title || !description) return;
+    list.appendChild(div);
+  });
+}
 
-    await fetch(API, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        title,
-        description,
-        priority,
-        assignedTo,
-        status: "Pending",
-        createdAt: new Date().toISOString()
-      })
-    });
+async function addReport() {
+  const title = document.getElementById("title").value;
+  const description = document.getElementById("desc").value;
+  const priority = document.getElementById("priority").value;
+  const assignedTo = document.getElementById("team").value;
 
-    document.getElementById("title").value = "";
-    document.getElementById("desc").value = "";
-  }
+  if (!title || !description) return;
 
-  async function resolve(id) {
-    await fetch(API + "/" + id, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        status: "Resolved",
-        resolvedAt: new Date().toISOString()
-      })
-    });
-  }
+  await fetch(API, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      title,
+      description,
+      priority,
+      assignedTo,
+      status: "Pending",
+      createdAt: new Date().toISOString()
+    })
+  });
 
-  // ⚡ actualización cada 2 segundos
-  setInterval(loadReports, 2000);
+  document.getElementById("title").value = "";
+  document.getElementById("desc").value = "";
+}
 
-  loadReports();
+async function resolve(id) {
+  await fetch(API + "/" + id, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      status: "Resolved",
+      resolvedAt: new Date().toISOString()
+    })
+  });
+}
+
+// ⚡ actualización rápida
+setInterval(loadReports, 2000);
+
+loadReports();
 </script>
-
-</body>
-</html>
