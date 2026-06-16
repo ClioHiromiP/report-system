@@ -98,6 +98,27 @@ window.onload = () => {
   setInterval(loadReports, 2000);
 };
 
+function timeAgo(date) {
+  const diff = Math.floor((new Date() - new Date(date)) / 60000);
+
+  if (diff < 1) return "justo ahora";
+  if (diff < 60) return diff + " min atrás";
+
+  const h = Math.floor(diff / 60);
+  return h + " hr atrás";
+}
+
+// ⏱ tiempo de resolución
+function resolutionTime(start, end) {
+  if (!end) return "";
+
+  const diff = Math.floor((new Date(end) - new Date(start)) / 60000);
+
+  if (diff < 60) return "Resuelto en " + diff + " min";
+
+  return "Resuelto en " + Math.floor(diff / 60) + " hr";
+}
+
 async function loadReports() {
   const res = await fetch(API);
   const data = await res.json();
@@ -117,9 +138,26 @@ async function loadReports() {
       ${r.description}<br>
       <b>Asignado a:</b> ${r.assignedTo}<br>
       <b>Estatus:</b> ${r.status}<br>
+
       <div class="small">
-        ${new Date(r.createdAt).toLocaleString()}
+        Creado: ${new Date(r.createdAt).toLocaleString()}<br>
+        ⏱ ${timeAgo(r.createdAt)}<br>
+
+        ${r.resolvedAt 
+          ? `Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
+          : ""
+        }
+
+        ${r.resolvedAt 
+          ? `✅ ${resolutionTime(r.createdAt, r.resolvedAt)}`
+          : ""
+        }
       </div>
+
+      ${r.status === "Pending"
+        ? `<button onclick="resolveReport(${r.id})">Marcar como Resuelto</button>`
+        : ""
+      }
     `;
 
     list.appendChild(div);
@@ -151,15 +189,28 @@ async function addReport() {
     })
   });
 
-  // limpiar campos
   document.getElementById("title").value = "";
   document.getElementById("desc").value = "";
 
-  // actualizar lista
+  loadReports();
+}
+
+// ✅ BOTÓN RESUELTO
+async function resolveReport(id) {
+  await fetch(API + "/" + id, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      status: "Resolved",
+      resolvedAt: new Date().toISOString()
+    })
+  });
+
   loadReports();
 }
 </script>
 
 </body>
 </html>
-``
