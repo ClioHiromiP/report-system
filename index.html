@@ -96,13 +96,46 @@
 const API = "https://report-system-ah71.onrender.com/reports";
 
 let openedDays = JSON.parse(localStorage.getItem("openedDays")) || {};
+let lastIds = new Set();
+
+// 🔔 notificaciones
+if ("Notification" in window) {
+  Notification.requestPermission();
+}
+
+// 🔊 sonido
+let notifSound;
+document.addEventListener("click", () => {
+  notifSound = new Audio("https://www.myinstants.com/media/sounds/bell.mp3");
+  notifSound.volume = 1.0;
+}, { once: true });
 
 window.onload = () => {
   loadReports();
   setInterval(loadReports, 2000);
 };
 
-// ✅ FORMULARIO DE ACCIÓN
+// 🔴 alerta visual
+function showAlert(text) {
+  const alertBox = document.createElement("div");
+
+  alertBox.innerHTML = "🚨 NUEVO REPORTE PARA PROCESOS 🚨<br>" + text;
+
+  alertBox.style.position = "fixed";
+  alertBox.style.top = "20px";
+  alertBox.style.right = "20px";
+  alertBox.style.background = "red";
+  alertBox.style.color = "white";
+  alertBox.style.padding = "15px";
+  alertBox.style.borderRadius = "10px";
+  alertBox.style.zIndex = "9999";
+
+  document.body.appendChild(alertBox);
+
+  setTimeout(() => alertBox.remove(), 8000);
+}
+
+// ✅ acciones
 function askForAction(id, type) {
   const action = prompt("Describe qué se hizo, cambió o por qué sigue pendiente");
 
@@ -114,7 +147,6 @@ function askForAction(id, type) {
   updateReport(id, type, action);
 }
 
-// ✅ ACTUALIZAR REPORTE
 async function updateReport(id, type, action) {
   let status = "Pending";
 
@@ -135,7 +167,7 @@ async function updateReport(id, type, action) {
   loadReports();
 }
 
-// ✅ TIEMPO TRANSCURRIDO
+// ✅ tiempos
 function timeAgo(date) {
   const diff = Math.floor((new Date() - new Date(date)) / 60000);
   if (diff < 1) return "Justo ahora";
@@ -143,7 +175,6 @@ function timeAgo(date) {
   return Math.floor(diff / 60) + " hr atrás";
 }
 
-// ✅ TIEMPO RESOLUCIÓN
 function resolutionTime(start, end) {
   if (!end) return "";
   const diff = Math.floor((new Date(end) - new Date(start)) / 60000);
@@ -151,7 +182,7 @@ function resolutionTime(start, end) {
   return "Resuelto en " + Math.floor(diff / 60) + " hr";
 }
 
-// ✅ CARGAR REPORTES
+// ✅ cargar reportes
 async function loadReports() {
   const res = await fetch(API);
   const data = await res.json();
@@ -180,6 +211,17 @@ async function loadReports() {
     content.style.display = openedDays[date] ? "block" : "none";
 
     grouped[date].reverse().forEach(r => {
+
+      // 🔔 detectar nuevos
+      if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
+        if (notifSound) notifSound.play().catch(() => {});
+        if (Notification.permission === "granted") {
+          new Notification("Nuevo reporte", { body: r.title });
+        }
+        showAlert(r.title);
+      }
+
+      lastIds.add(r.id);
 
       const div = document.createElement("div");
       div.className = "report";
@@ -221,7 +263,7 @@ async function loadReports() {
   });
 }
 
-// ✅ CREAR REPORTE
+// ✅ crear reporte
 async function addReport() {
   const title = document.getElementById("title").value;
   const description = document.getElementById("desc").value;
@@ -255,3 +297,4 @@ async function addReport() {
 
 </body>
 </html>
+``
