@@ -49,6 +49,8 @@
 const API = "https://report-system-ah71.onrender.com/reports";
 
 let lastIds = new Set();
+let firstLoad = true;
+
 let notifSound;
 
 // ✅ ACTIVAR TODO MANUALMENTE
@@ -98,7 +100,7 @@ async function loadReports() {
   data.forEach(r => {
 
     // ✅ DETECTAR NUEVOS
-    if (!lastIds.has(r.id)) {
+    if (!lastIds.has(r.id) && !firstLoad) {
 
       // 🔊 sonido
       if (notifSound) {
@@ -123,6 +125,8 @@ async function loadReports() {
 
     list.appendChild(div);
   });
+  firstLoad = false;
+
 }
 
 setInterval(loadReports, 2000);
