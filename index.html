@@ -103,7 +103,6 @@ window.onload = () => {
   setInterval(loadReports, 2000);
 };
 
-// ✅ ASK WHAT THEY DID
 function askForAction(id, type) {
   const action = prompt("Describe qué se hizo, cambió o por qué sigue pendiente");
 
@@ -115,7 +114,6 @@ function askForAction(id, type) {
   updateReport(id, type, action);
 }
 
-// ✅ UPDATE REPORT
 async function updateReport(id, type, action) {
   let status = "Pending";
 
@@ -136,7 +134,6 @@ async function updateReport(id, type, action) {
   loadReports();
 }
 
-// ✅ TIEMPOS
 function timeAgo(date) {
   const diff = Math.floor((new Date() - new Date(date)) / 60000);
   if (diff < 1) return "Justo ahora";
@@ -151,12 +148,6 @@ function resolutionTime(start, end) {
   if (diff < 60) return "Resuelto en " + diff + " min";
   return "Resuelto en " + Math.floor(diff / 60) + " hr";
 }
-
-// 🔊 sonido
-let notifSound;
-document.addEventListener("click", () => {
-  notifSound = new Audio("https://www.myinstants.com/media/sounds/bell.mp3");
-}, { once: true });
 
 // ✅ LOAD REPORTS
 async function loadReports() {
@@ -184,7 +175,6 @@ async function loadReports() {
     `;
 
     const content = section.querySelector(".day-content");
-
     content.style.display = openedDays[date] ? "block" : "none";
 
     grouped[date].reverse().forEach(r => {
@@ -205,18 +195,14 @@ async function loadReports() {
           ${r.resolvedAt ? `Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` : ""}
           ${r.resolvedAt ? `✅ ${resolutionTime(r.createdAt, r.resolvedAt)}<br>` : ""}
 
-   ${`
-  <button onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
-  <button onclick="askForAction(${r.id}, 'not')">❌ No Resuelto</button>
-  <button onclick="askForAction(${r.id}, 'pending')">⏳ Pendiente</button>
-`}
-``
+          ${r.actionTaken ? `🔧 Acción: ${r.actionTaken}<br>` : ""}
+          ${r.status === "Not Resolved" ? `⚠️ No resuelto<br>` : ""}
+          ${r.status === "Pending" && r.actionTaken ? `⏳ Sigue pendiente<br>` : ""}
+        </div>
 
-        ${`
-          <button onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
-          <button onclick="askForAction(${r.id}, 'not')">❌ No Resuelto</button>
-          <button onclick="askForAction(${r.id}, 'pending')">⏳ Pendiente</button>
-        `}
+        <button onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
+        <button onclick="askForAction(${r.id}, 'not')">❌ No Resuelto</button>
+        <button onclick="askForAction(${r.id}, 'pending')">⏳ Pendiente</button>
       `;
 
       content.appendChild(div);
@@ -235,7 +221,6 @@ async function loadReports() {
   });
 }
 
-// ✅ CREATE REPORT
 async function addReport() {
   const title = document.getElementById("title").value;
   const description = document.getElementById("desc").value;
@@ -269,4 +254,3 @@ async function addReport() {
 
 </body>
 </html>
-``
