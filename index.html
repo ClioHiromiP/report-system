@@ -146,6 +146,9 @@ function resolutionTime(start, end) {
 // 🔔 VARIABLES DE CONTROL
 let lastIds = new Set();
 
+// ✅ NUEVO: guardar días abiertos
+let openedDays = {};
+
 // 🔊 SONIDO
 let notifSound;
 document.addEventListener("click", () => {
@@ -181,7 +184,6 @@ function showAlert(text) {
   }, 8000);
 }
 
-/* ✅ ✅ SOLO ESTO CAMBIÓ */
 async function loadReports() {
   const res = await fetch(API);
   const data = await res.json();
@@ -191,7 +193,6 @@ async function loadReports() {
 
   list.innerHTML = "";
 
-  // ✅ Agrupar por fecha
   const grouped = {};
 
   data.forEach(r => {
@@ -215,19 +216,18 @@ async function loadReports() {
 
     const content = section.querySelector(".day-content");
 
+    // ✅ YA NO se cierra solo
+    content.style.display = openedDays[date] ? "block" : "none";
+
     grouped[date].reverse().forEach(r => {
 
-      // 🔔 notificaciones
       if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
-
         if (notifSound) notifSound.play().catch(() => {});
-
         if (Notification.permission === "granted") {
           new Notification("Nuevo reporte para Procesos", {
             body: r.title
           });
         }
-
         showAlert(r.title);
       }
 
@@ -266,19 +266,20 @@ async function loadReports() {
       content.appendChild(div);
     });
 
-    // ✅ toggle desplegable
     const header = section.querySelector("h3");
-    content.style.display = "none";
 
     header.onclick = () => {
-      content.style.display =
-        content.style.display === "none" ? "block" : "none";
+      const isOpen = content.style.display === "none";
+
+      content.style.display = isOpen ? "block" : "none";
+
+      // ✅ guardar estado
+      openedDays[date] = isOpen;
     };
 
     list.appendChild(section);
   });
 }
-/* ✅ ✅ FIN CAMBIO */
 
 async function addReport() {
   const title = document.getElementById("title").value;
