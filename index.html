@@ -14,6 +14,7 @@
 
     h1 {
       color: #0f4c81;
+      text-align: center;
     }
 
     .container {
@@ -29,7 +30,9 @@
       width: 100%;
       padding: 8px;
       margin-top: 5px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
 
     button {
@@ -37,8 +40,13 @@
       color: white;
       padding: 10px;
       border: none;
+      border-radius: 5px;
       cursor: pointer;
       width: 100%;
+    }
+
+    button:hover {
+      background-color: #08365d;
     }
 
     .report {
@@ -121,14 +129,12 @@ window.onload = () => {
 
     data.reverse().forEach(r => {
 
-      // ✅ ALERTA SOLO NUEVOS
+      // 🔔 alertas
       if (!lastIds.has(r.id)) {
-
         if (sound) sound.play().catch(() => {});
         if (Notification.permission === "granted") {
           new Notification("Nuevo reporte", { body: r.title });
         }
-
         showAlert(r.title);
       }
 
@@ -140,7 +146,7 @@ window.onload = () => {
       div.innerHTML = `
         <b>${r.title}</b> (${r.priority})<br>
         ${r.description}<br>
-        <b>Estatus:</b> ${r.status}<br>
+        <b>Estatus:</b> ${r.status}
       `;
 
       list.appendChild(div);
@@ -154,22 +160,32 @@ window.onload = () => {
 
     if (!title || !description) return;
 
-    await fetch(API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        description,
-        priority,
-        assignedTo: "Procesos",
-        status: "Pending",
-        createdAt: new Date().toISOString()
-      })
-    });
+    try {
+      await fetch(API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          priority,
+          assignedTo: "Procesos",
+          status: "Pending",
+          createdAt: new Date().toISOString()
+        })
+      });
 
-    // limpiar inputs
-    document.getElementById("title").value = "";
-    document.getElementById("desc").value = "";
+      // limpiar inputs
+      document.getElementById("title").value = "";
+      document.getElementById("desc").value = "";
+
+      // ✅ actualizar inmediatamente
+      loadReports();
+
+    } catch (err) {
+      console.error("Error al enviar:", err);
+    }
   }
 
   setInterval(loadReports, 2000);
