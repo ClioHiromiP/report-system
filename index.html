@@ -83,10 +83,9 @@
   </select>
 
   <label>Asignado a</label>
-<select id="assignedTo">
-  assignedTo: document.getElementById("assignedTo").value,
-    <option selected>Procesos</option>
-</select>
+  <select id="assignedTo">
+    <option value="Procesos" selected>Procesos</option>
+  </select>
 
   <button onclick="addReport()">Enviar Reporte</button>
 </div>
@@ -118,19 +117,18 @@ async function resolveReport(id) {
 
   loadReports();
 }
-``
 
 // 🔔 VARIABLES DE CONTROL
 let lastIds = new Set();
 
-// 🔊 SONIDO (se activa después de un click)
+// 🔊 SONIDO
 let notifSound;
 document.addEventListener("click", () => {
   notifSound = new Audio("https://www.myinstants.com/media/sounds/bell.mp3");
   notifSound.volume = 1.0;
 }, { once: true });
 
-// 🪟 PEDIR PERMISO DE NOTIFICACIONES
+// 🪟 NOTIFICACIONES
 if ("Notification" in window) {
   Notification.requestPermission();
 }
@@ -168,46 +166,43 @@ async function loadReports() {
   list.innerHTML = "";
 
   data.reverse().forEach(r => {
-    // ✅ DETECTAR NUEVOS REPORTES SOLO PARA PROCESOS
-if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
 
-  // 🔔 sonido
-  if (notifSound) {
-    notifSound.play().catch(() => {});
-  }
+    // ✅ NOTIFICACIONES SOLO PARA PROCESOS
+    if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
 
-  // 🪟 notificación del sistema
-  if (Notification.permission === "granted") {
-    new Notification("Nuevo reporte para Procesos", {
-      body: r.title
-    });
-  }
+      if (notifSound) {
+        notifSound.play().catch(() => {});
+      }
 
-  // 🚨 alerta visual
-  showAlert(r.title);
-}
+      if (Notification.permission === "granted") {
+        new Notification("Nuevo reporte para Procesos", {
+          body: r.title
+        });
+      }
 
-lastIds.add(r.id);
+      showAlert(r.title);
+    }
+
+    lastIds.add(r.id);
 
     const div = document.createElement("div");
     div.className = "report";
 
     div.innerHTML = `
-  <b>${r.title}</b> (${r.priority})<br>
-  ${r.description}<br>
-  <b>Asignado a:</b> ${r.assignedTo}<br>
-  <b>Estatus:</b> ${r.status}<br>
+      <b>${r.title}</b> (${r.priority})<br>
+      ${r.description}<br>
+      <b>Asignado a:</b> ${r.assignedTo}<br>
+      <b>Estatus:</b> ${r.status}<br>
 
-  <div class="small">
-    Creado: ${new Date(r.createdAt).toLocaleString()}
-  </div>
+      <div class="small">
+        Creado: ${new Date(r.createdAt).toLocaleString()}
+      </div>
 
-  ${r.status === "Pending"
-    ? `<button onclick="resolveReport(${r.id})">Marcar como Resuelto</button>`
-    : ""
-  }
-`;
-
+      ${r.status === "Pending"
+        ? `<button onclick="resolveReport(${r.id})">Marcar como Resuelto</button>`
+        : ""
+      }
+    `;
 
     list.appendChild(div);
   });
@@ -217,6 +212,7 @@ async function addReport() {
   const title = document.getElementById("title").value;
   const description = document.getElementById("desc").value;
   const priority = document.getElementById("priority").value;
+  const assignedTo = document.getElementById("assignedTo").value;
 
   if (!title || !description) {
     alert("Llena todos los campos");
@@ -232,17 +228,15 @@ async function addReport() {
       title,
       description,
       priority,
-      assignedTo: "Procesos",
+      assignedTo,
       status: "Pending",
       createdAt: new Date().toISOString()
     })
   });
 
-  // limpiar campos
   document.getElementById("title").value = "";
   document.getElementById("desc").value = "";
 
-  // actualizar lista
   loadReports();
 }
 </script>
