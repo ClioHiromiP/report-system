@@ -205,10 +205,12 @@ async function loadReports() {
           ${r.resolvedAt ? `Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` : ""}
           ${r.resolvedAt ? `✅ ${resolutionTime(r.createdAt, r.resolvedAt)}<br>` : ""}
 
-          ${r.actionTaken ? `🔧 Acción: ${r.actionTaken}<br>` : ""}
-          ${r.status === "Not Resolved" ? `⚠️ No resuelto<br>` : ""}
-          ${r.status === "Pending" && r.actionTaken ? `⏳ Sigue pendiente<br>` : ""}
-        </div>
+   ${`
+  <button onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
+  <button onclick="askForAction(${r.id}, 'not')">❌ No Resuelto</button>
+  <button onclick="askForAction(${r.id}, 'pending')">⏳ Pendiente</button>
+`}
+``
 
         ${`
           <button onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
