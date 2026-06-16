@@ -122,10 +122,10 @@ function timeAgo(date) {
   const diff = Math.floor((new Date() - new Date(date)) / 60000);
 
   if (diff < 1) return "Justo ahora";
-  if (diff < 60) return diff + " min atrás";
+  if (diff < 60) return diff + "min";
 
   const hours = Math.floor(diff / 60);
-  if (hours < 24) return hours + " hr atrás";
+  if (hours < 24) return hours + " hr ";
 
   const days = Math.floor(hours / 24);
   return days + " día(s)";
@@ -137,7 +137,7 @@ function resolutionTime(start, end) {
   const diff = Math.floor((new Date(end) - new Date(start)) / 60000);
 
   if (diff < 1) return "Resuelto inmediatamente";
-  if (diff < 60) return "Resuelto en " + diff + " min";
+  if (diff < 60) return "Resuelto hace " + diff + " min";
 
   const hours = Math.floor(diff / 60);
   return "Resuelto en " + hours + " hr";
