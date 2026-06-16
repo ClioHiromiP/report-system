@@ -98,6 +98,22 @@ window.onload = () => {
   setInterval(loadReports, 2000);
 };
 
+async function resolveReport(id) {
+  await fetch(API + "/" + id, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      status: "Resolved",
+      resolvedAt: new Date().toISOString()
+    })
+  });
+
+  loadReports();
+}
+``
+
 // 🔔 VARIABLES DE CONTROL
 let lastIds = new Set();
 
