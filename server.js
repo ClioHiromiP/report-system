@@ -59,26 +59,19 @@ app.post("/reports", async (req, res) => {
   };
 
   try {
-    // ✅ guardar en Supabase
-    await supabase.from("reports").insert([newReport]);
-  } catch (err) {
-    console.log("Supabase error:", err);
-  }
+    const { error } = await supabase
+      .from("reports")
+      .insert([newReport]);
 
-  // ✅ TU LÓGICA ORIGINAL (no se rompe)
-  const file = getTodayFile();
-  let reports = [];
-
-  if (fs.existsSync(file)) {
-    const content = fs.readFileSync(file);
-    if (content.length > 0) {
-      reports = JSON.parse(content);
+    if (error) {
+      console.error("Supabase error:", error);
     }
+
+  } catch (err) {
+    console.error("Catch error:", err);
   }
 
-  reports.push(newReport);
-  fs.writeFileSync(file, JSON.stringify(reports, null, 2));
-
+  // ✅ SIEMPRE RESPONDE (esto arregla el freeze)
   res.json(newReport);
 });
 ``
