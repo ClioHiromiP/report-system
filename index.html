@@ -56,6 +56,10 @@
       flex-direction: column;
     }
 
+    .form-grid > div.full-width {
+      grid-column: 1 / -1;
+    }
+
     label {
       font-weight: 700;
       margin-bottom: 10px;
@@ -206,7 +210,7 @@
 <div class="container">
   <div class="page-header">
     <h1>Sistema de Reportes</h1>
-    <p class="subtitle">Crea un nuevo reporte, revisa los existentes y descarga la información en formato Excel.</p>
+    <p class="subtitle">Crea un nuevo reporte y revisa los existentes.</p>
   </div>
 
   <div class="form-grid">
@@ -215,7 +219,7 @@
       <input id="title" placeholder="Ingrese el título del reporte">
     </div>
 
-    <div>
+    <div class="full-width">
       <label>Descripción</label>
       <textarea id="desc" placeholder="Describe el problema o situación"></textarea>
     </div>
@@ -243,7 +247,7 @@
 <div class="container">
     <div class="page-header">
       <h1>Reportes</h1>
-      <p class="subtitle">Mira todos los reportes en una tabla clara y descarga los datos en CSV cuando lo necesites.</p>
+      <p class="subtitle">Mira todos los reportes en una tabla clara.</p>
     </div>
 
     <p><a id="downloadCsvLink" class="download-link" href="/reports.csv" download="reportes.csv">Descargar Excel (.csv)</a></p>
