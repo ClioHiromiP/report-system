@@ -12,12 +12,27 @@
       align-items: center;
     }
 
+    h1 {
+      color: #0f4c81;
+      text-align: center;
+    }
+
     .container {
       width: 500px;
       background: white;
       padding: 20px;
       margin-top: 20px;
       border-radius: 10px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
 
     button {
@@ -30,14 +45,46 @@
       cursor: pointer;
       width: 100%;
     }
+
+    .report {
+      border-left: 5px solid #0f4c81;
+      background: #f9f9f9;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: gray;
+    }
   </style>
 </head>
 
 <body>
 
 <div class="container">
-  <h1>Activar Notificaciones</h1>
-  <button onclick="enableNotifications()">🔔 Activar alertas</button>
+  <h1>Crear Reporte</h1>
+
+  <label>Tema</label>
+  <input id="title">
+
+  <label>Descripción</label>
+  <textarea id="desc"></textarea>
+
+  <label>Importancia</label>
+  <select id="priority">
+    <option>Alta</option>
+    <option selected>Media</option>
+    <option>Baja</option>
+  </select>
+
+  <label>Asignado a</label>
+  <select id="assignedTo">
+    <option value="Procesos" selected>Procesos</option>
+  </select>
+
+  <button onclick="addReport()">Enviar Reporte</button>
 </div>
 
 <div class="container">
@@ -48,48 +95,91 @@
 <script>
 const API = "https://report-system-ah71.onrender.com/reports";
 
+let openedDays = JSON.parse(localStorage.getItem("openedDays")) || {};
 let lastIds = new Set();
-let firstLoad = true;
 
+// 🔔 notificaciones
+if ("Notification" in window) {
+  Notification.requestPermission();
+}
+
+// 🔊 sonido
 let notifSound;
-
-// ✅ ACTIVAR TODO MANUALMENTE
-function enableNotifications() {
-
-  // pedir permiso
-  Notification.requestPermission().then(permission => {
-    if (permission === "granted") {
-      alert("Notificaciones activadas ✅");
-    } else {
-      alert("Necesitas permitir notificaciones ❌");
-    }
-  });
-
-  // activar sonido (esto SOLO funciona después de click)
+document.addEventListener("click", () => {
   notifSound = new Audio("https://www.myinstants.com/media/sounds/bell.mp3");
   notifSound.volume = 1.0;
-}
+}, { once: true });
 
-// ✅ ALERTA VISUAL
+// 🚨 alerta visual
 function showAlert(text) {
-  const div = document.createElement("div");
+  const alertBox = document.createElement("div");
 
-  div.innerHTML = "🚨 NUEVO REPORTE 🚨<br>" + text;
+  alertBox.innerHTML = "🚨 NUEVO REPORTE PARA PROCESOS 🚨<br>" + text;
 
-  div.style.position = "fixed";
-  div.style.top = "20px";
-  div.style.right = "20px";
-  div.style.background = "red";
-  div.style.color = "white";
-  div.style.padding = "15px";
-  div.style.borderRadius = "10px";
+  alertBox.style.position = "fixed";
+  alertBox.style.top = "20px";
+  alertBox.style.right = "20px";
+  alertBox.style.background = "red";
+  alertBox.style.color = "white";
+  alertBox.style.padding = "15px";
+  alertBox.style.borderRadius = "10px";
+  alertBox.style.zIndex = "9999";
 
-  document.body.appendChild(div);
+  document.body.appendChild(alertBox);
 
-  setTimeout(() => div.remove(), 5000);
+  setTimeout(() => alertBox.remove(), 8000);
 }
 
-// ✅ CARGAR REPORTES
+window.onload = () => {
+  loadReports();
+  setInterval(loadReports, 2000);
+};
+
+function askForAction(id, type) {
+  const action = prompt("Describe qué se hizo, cambió o por qué sigue pendiente");
+
+  if (!action) {
+    alert("Debes escribir qué pasó");
+    return;
+  }
+
+  updateReport(id, type, action);
+}
+
+async function updateReport(id, type, action) {
+  let status = "Pending";
+
+  if (type === "resolved") status = "Resolved";
+  if (type === "not") status = "Not Resolved";
+  if (type === "pending") status = "Pending";
+
+  await fetch(API + "/" + id, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      status,
+      resolvedAt: new Date().toISOString(),
+      actionTaken: action
+    })
+  });
+
+  loadReports();
+}
+
+function timeAgo(date) {
+  const diff = Math.floor((new Date() - new Date(date)) / 60000);
+  if (diff < 1) return "Justo ahora";
+  if (diff < 60) return diff + " min atrás";
+  return Math.floor(diff / 60) + " hr atrás";
+}
+
+function resolutionTime(start, end) {
+  if (!end) return "";
+  const diff = Math.floor((new Date(end) - new Date(start)) / 60000);
+  if (diff < 60) return "Resuelto en " + diff + " min";
+  return "Resuelto en " + Math.floor(diff / 60) + " hr";
+}
+
 async function loadReports() {
   const res = await fetch(API);
   const data = await res.json();
@@ -97,39 +187,115 @@ async function loadReports() {
   const list = document.getElementById("list");
   list.innerHTML = "";
 
+  const grouped = {};
+
   data.forEach(r => {
-
-    // ✅ DETECTAR NUEVOS
-    if (!lastIds.has(r.id) && !firstLoad) {
-
-      // 🔊 sonido
-      if (notifSound) {
-        notifSound.play().catch(() => {});
-      }
-
-      // 🪟 notificación sistema
-      if (Notification.permission === "granted") {
-        new Notification("Nuevo reporte", {
-          body: r.title
-        });
-      }
-
-      // 🚨 alerta visual
-      showAlert(r.title);
-    }
-
-    lastIds.add(r.id);
-
-    const div = document.createElement("div");
-    div.innerHTML = r.title;
-
-    list.appendChild(div);
+    const date = new Date(r.createdAt).toLocaleDateString();
+    if (!grouped[date]) grouped[date] = [];
+    grouped[date].push(r);
   });
-  firstLoad = false;
 
+  Object.keys(grouped).reverse().forEach(date => {
+
+    const section = document.createElement("div");
+
+    section.innerHTML = `
+      <h3 style="cursor:pointer;">📅 ${date}</h3>
+      <div class="day-content"></div>
+    `;
+
+    const content = section.querySelector(".day-content");
+    content.style.display = openedDays[date] ? "block" : "none";
+
+    grouped[date].reverse().forEach(r => {
+
+      // ✅ NOTIFICACIONES RESTAURADAS
+      if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
+
+        if (notifSound) {
+          notifSound.play().catch(() => {});
+        }
+
+        if (Notification.permission === "granted") {
+          new Notification("Nuevo reporte para Procesos", {
+            body: r.title
+          });
+        }
+
+        showAlert(r.title);
+      }
+
+      lastIds.add(r.id);
+
+      const div = document.createElement("div");
+      div.className = "report";
+
+      div.innerHTML = `
+        <b>${r.title}</b> (${r.priority})<br>
+        ${r.description}<br>
+        <b>Asignado a:</b> ${r.assignedTo}<br>
+        <b>Estatus:</b> ${r.status}<br>
+
+        <div class="small">
+          Creado: ${new Date(r.createdAt).toLocaleString()}<br>
+          ⏱ ${timeAgo(r.createdAt)}<br>
+
+          ${r.resolvedAt ? `Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` : ""}
+          ${r.resolvedAt ? `✅ ${resolutionTime(r.createdAt, r.resolvedAt)}<br>` : ""}
+
+          ${r.actionTaken ? `🔧 Acción: ${r.actionTaken}<br>` : ""}
+          ${r.status === "Not Resolved" ? `⚠️ No resuelto<br>` : ""}
+          ${r.status === "Pending" && r.actionTaken ? `⏳ Sigue pendiente<br>` : ""}
+        </div>
+
+        <button onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
+        <button onclick="askForAction(${r.id}, 'not')">❌ No Resuelto</button>
+        <button onclick="askForAction(${r.id}, 'pending')">⏳ Pendiente</button>
+      `;
+
+      content.appendChild(div);
+    });
+
+    section.querySelector("h3").onclick = () => {
+      const isOpen = content.style.display === "none";
+      content.style.display = isOpen ? "block" : "none";
+      openedDays[date] = isOpen;
+      localStorage.setItem("openedDays", JSON.stringify(openedDays));
+    };
+
+    list.appendChild(section);
+  });
 }
 
-setInterval(loadReports, 2000);
+async function addReport() {
+  const title = document.getElementById("title").value;
+  const description = document.getElementById("desc").value;
+  const priority = document.getElementById("priority").value;
+  const assignedTo = document.getElementById("assignedTo").value;
+
+  if (!title || !description) {
+    alert("Llena todos los campos");
+    return;
+  }
+
+  await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title,
+      description,
+      priority,
+      assignedTo,
+      status: "Pending",
+      createdAt: new Date().toISOString()
+    })
+  });
+
+  document.getElementById("title").value = "";
+  document.getElementById("desc").value = "";
+
+  loadReports();
+}
 </script>
 
 </body>
