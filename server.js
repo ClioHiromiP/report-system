@@ -25,6 +25,8 @@ app.get("/", (req, res) => {
 const DATA_FOLDER = "./data";
 const LOCAL_REPORTS_FILE = path.join(process.env.PRIVATE_TMP_DIR || os.tmpdir(), "reports.json");
 
+console.log("Local reports file:", LOCAL_REPORTS_FILE);
+
 if (!fs.existsSync(DATA_FOLDER)) {
   fs.mkdirSync(DATA_FOLDER);
 }
@@ -47,11 +49,14 @@ function readLocalReports() {
   }
 }
 
+let localReportsMemory = readLocalReports();
+
 function saveLocalReport(report) {
-  const reports = readLocalReports();
-  reports.push(report);
+  if (!localReportsMemory.some(r => r.id === report.id)) {
+    localReportsMemory.push(report);
+  }
   try {
-    fs.writeFileSync(LOCAL_REPORTS_FILE, JSON.stringify(reports, null, 2));
+    fs.writeFileSync(LOCAL_REPORTS_FILE, JSON.stringify(localReportsMemory, null, 2));
   } catch (err) {
     console.error("Failed saving local report file:", err);
   }
@@ -59,6 +64,8 @@ function saveLocalReport(report) {
 
 // ✅ GET (CAMBIO: ahora desde Supabase, con fallback local)
 app.get("/reports", async (req, res) => {
+  const localReports = localReportsMemory.length ? localReportsMemory : readLocalReports();
+
   try {
     const { data, error } = await supabase
       .from("reports")
@@ -67,18 +74,28 @@ app.get("/reports", async (req, res) => {
 
     if (error) {
       console.error("Supabase GET error:", error);
-      return res.json(readLocalReports());
+      return res.json(localReports);
     }
 
     if (!Array.isArray(data)) {
       console.error("Supabase GET returned invalid data:", data);
-      return res.json(readLocalReports());
+      return res.json(localReports);
     }
 
-    return res.json(data);
+    if (localReports.length === 0) {
+      return res.json(data);
+    }
+
+    const merged = [...data];
+    const ids = new Set(data.map(r => r.id));
+    localReports.forEach(r => {
+      if (!ids.has(r.id)) merged.push(r);
+    });
+
+    return res.json(merged);
   } catch (error) {
     console.error("Supabase GET exception:", error);
-    return res.json(readLocalReports());
+    return res.json(localReports);
   }
 });
 

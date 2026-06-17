@@ -97,15 +97,24 @@ const API = "/reports";
 
 let openedDays = JSON.parse(localStorage.getItem("openedDays")) || {};
 let lastIds = new Set();
+let notificationPermission = "default";
 
 //  permisos
 if ("Notification" in window) {
-  Notification.requestPermission();
+  Notification.requestPermission().then(permission => {
+    notificationPermission = permission;
+  });
 }
 
 // 🔊 sonido
 let notifSound;
 document.addEventListener("click", () => {
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission().then(permission => {
+      notificationPermission = permission;
+    });
+  }
+
   notifSound = new Audio("https://www.myinstants.com/media/sounds/bell.mp3");
   notifSound.volume = 1.0;
 }, { once: true });
@@ -186,7 +195,11 @@ function resolutionTime(start, end) {
 // cargar
 async function loadReports() {
   const res = await fetch(API);
-  const data = await res.json();
+  let data = await res.json();
+
+  if (!Array.isArray(data)) {
+    data = [];
+  }
 
   const list = document.getElementById("list");
   list.innerHTML = "";
@@ -215,8 +228,11 @@ async function loadReports() {
 
       if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
 
-        if (notifSound) notifSound.play().catch(() => {});
-        if (Notification.permission === "granted") {
+        if (notifSound) {
+          notifSound.play().catch(() => {});
+        }
+
+        if (notificationPermission === "granted") {
           new Notification("Nuevo reporte", {
             body: r.title
           });
