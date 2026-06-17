@@ -103,12 +103,19 @@
 
 <div class="container">
   <h1>Reportes</h1>
-  <p><a class="download-link" href="/reports.csv" download="reportes.csv">Descargar Excel (.csv)</a></p>
+  <p><a id="downloadCsvLink" class="download-link" href="/reports.csv" download="reportes.csv">Descargar Excel (.csv)</a></p>
   <div id="list"></div>
 </div>
 
 <script>
 const API = "/reports";
+
+function updateCsvLink() {
+  const link = document.getElementById("downloadCsvLink");
+  if (link) {
+    link.href = "/reports.csv?ts=" + Date.now();
+  }
+}
 
 let openedDays = JSON.parse(localStorage.getItem("openedDays")) || {};
 let lastIds = new Set();
@@ -345,7 +352,11 @@ async function addReport() {
 
 window.onload = () => {
   loadReports();
-  setInterval(loadReports, 2000);
+  updateCsvLink();
+  setInterval(() => {
+    loadReports();
+    updateCsvLink();
+  }, 2000);
 };
 </script>
 

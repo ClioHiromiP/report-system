@@ -8,7 +8,6 @@ app.use(cors());
 app.use(express.json());
 
 const DATA_FOLDER = path.join(__dirname, "data");
-const REPORTS_JSON = path.join(DATA_FOLDER, "reports.json");
 const REPORTS_CSV = path.join(DATA_FOLDER, "reports.csv");
 
 if (!fs.existsSync(DATA_FOLDER)) {
@@ -116,22 +115,11 @@ function readCsv() {
 }
 
 function readReports() {
-  if (fs.existsSync(REPORTS_CSV)) {
-    const csvReports = readCsv();
-    if (csvReports.length > 0) return csvReports;
-  }
-
-  if (!fs.existsSync(REPORTS_JSON)) return [];
-  try {
-    return JSON.parse(fs.readFileSync(REPORTS_JSON, "utf8"));
-  } catch (err) {
-    console.error("Failed reading reports JSON:", err);
-    return [];
-  }
+  if (!fs.existsSync(REPORTS_CSV)) return [];
+  return readCsv();
 }
 
 function saveReports(reports) {
-  fs.writeFileSync(REPORTS_JSON, JSON.stringify(reports, null, 2), "utf8");
   writeCsv(reports);
 }
 
@@ -180,6 +168,5 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
-  console.log("Reports JSON:", REPORTS_JSON);
   console.log("Reports CSV:", REPORTS_CSV);
 });
