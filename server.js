@@ -52,24 +52,19 @@ app.get("/reports", async (req, res) => {
 });
 
 // ✅ POST (CAMBIO IMPORTANTE: ahora guarda en Supabase)
-app.post("/reports", async (req, res) => {
+app.post("/reports", (req, res) => {
   const newReport = {
     id: Date.now(),
     ...req.body
   };
 
-  try {
-    const { error } = await supabase
-      .from("reports")
-      .insert([newReport]);
+  // ✅ RESPONDER INMEDIATO (esto desbloquea el botón)
+  res.json(newReport);
 
-    if (error) {
-      console.error("Supabase error:", error);
-    }
-
-  } catch (err) {
-    console.error("Catch error:", err);
-  }
+  // 🔽 TODO LO DEMÁS DESPUÉS (sin bloquear)
+  supabase.from("reports").insert([newReport])
+    .catch(err => console.log("Supabase error:", err));
+});
 
   // ✅ SIEMPRE RESPONDE (esto arregla el freeze)
   res.json(newReport);
