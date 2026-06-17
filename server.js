@@ -2,10 +2,17 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ✅ SUPABASE CONFIG (CORRECTO)
+const supabase = createClient(
+  "https://kvtlthrvpkcniupkoocj.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dGx0aHJ2cGtjbml1cGtvb2NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDEzMTIsImV4cCI6MjA5NzI3NzMxMn0.26UU5emj_hzxoZUhyJxr0DOEAE3refAJp7JbulQGyJU"
+);
 
 // ✅ servir frontend
 app.use(express.static(__dirname));
