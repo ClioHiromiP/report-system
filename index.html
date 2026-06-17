@@ -81,40 +81,77 @@
 <script>
 const API = "https://report-system-ah71.onrender.com/reports";
 
+let openedDays = JSON.parse(localStorage.getItem("openedDays")) || {};
 let lastIds = new Set();
 
-// ✅ pedir permiso una sola vez
+// 🔔 NOTIFICACIONES COMO TENÍAS
 if ("Notification" in window) {
   Notification.requestPermission();
 }
 
-// ✅ activar sonido después de cualquier click
+// 🔊 SONIDO COMO TENÍAS
 let notifSound;
 document.addEventListener("click", () => {
   notifSound = new Audio("https://www.myinstants.com/media/sounds/bell.mp3");
   notifSound.volume = 1.0;
 }, { once: true });
 
-// 🚨 alerta visual
+// 🚨 ALERTA VISUAL COMO TENÍAS
 function showAlert(text) {
-  const div = document.createElement("div");
+  const alertBox = document.createElement("div");
 
-  div.innerHTML = "🚨 NUEVO REPORTE 🚨<br>" + text;
+  alertBox.innerHTML = "🚨 NUEVO REPORTE PARA PROCESOS 🚨<br>" + text;
 
-  div.style.position = "fixed";
-  div.style.top = "20px";
-  div.style.right = "20px";
-  div.style.background = "red";
-  div.style.color = "white";
-  div.style.padding = "15px";
-  div.style.borderRadius = "10px";
+  alertBox.style.position = "fixed";
+  alertBox.style.top = "20px";
+  alertBox.style.right = "20px";
+  alertBox.style.background = "red";
+  alertBox.style.color = "white";
+  alertBox.style.padding = "15px";
+  alertBox.style.borderRadius = "10px";
+  alertBox.style.zIndex = "9999";
 
-  document.body.appendChild(div);
+  document.body.appendChild(alertBox);
 
-  setTimeout(() => div.remove(), 5000);
+  setTimeout(() => alertBox.remove(), 8000);
 }
 
-// ✅ cargar reportes
+window.onload = () => {
+  loadReports();
+  setInterval(loadReports, 2000);
+};
+
+function askForAction(id, type) {
+  const action = prompt("Describe qué se hizo, cambió o por qué sigue pendiente");
+
+  if (!action) {
+    alert("Debes escribir qué pasó");
+    return;
+  }
+
+  updateReport(id, type, action);
+}
+
+async function updateReport(id, type, action) {
+  let status = "Pending";
+
+  if (type === "resolved") status = "Resolved";
+  if (type === "not") status = "Not Resolved";
+  if (type === "pending") status = "Pending";
+
+  await fetch(API + "/" + id, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      status,
+      resolvedAt: new Date().toISOString(),
+      actionTaken: action
+    })
+  });
+
+  loadReports();
+}
+
 async function loadReports() {
   const res = await fetch(API);
   const data = await res.json();
@@ -124,13 +161,15 @@ async function loadReports() {
 
   data.forEach(r => {
 
-    // 🔔 detectar nuevos (como antes)
+    // ✅ TU LÓGICA ORIGINAL RESTAURADA
     if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
 
-      if (notifSound) notifSound.play().catch(() => {});
+      if (notifSound) {
+        notifSound.play().catch(() => {});
+      }
 
       if (Notification.permission === "granted") {
-        new Notification("Nuevo reporte", {
+        new Notification("Nuevo reporte para Procesos", {
           body: r.title
         });
       }
@@ -152,9 +191,6 @@ async function loadReports() {
   });
 }
 
-setInterval(loadReports, 2000);
-
-// ✅ crear reporte
 async function addReport() {
   const title = document.getElementById("title").value;
   const description = document.getElementById("desc").value;
@@ -185,4 +221,3 @@ async function addReport() {
 
 </body>
 </html>
-``
