@@ -26,6 +26,15 @@
       box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
     }
 
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
     button {
       background-color: #0f4c81;
       color: white;
@@ -57,15 +66,20 @@
 <div class="container">
   <h1>Crear Reporte</h1>
 
-  <input id="title" placeholder="Tema">
-  <textarea id="desc" placeholder="Descripción"></textarea>
+  <label>Tema</label>
+  <input id="title">
 
+  <label>Descripción</label>
+  <textarea id="desc"></textarea>
+
+  <label>Importancia</label>
   <select id="priority">
     <option>Alta</option>
     <option selected>Media</option>
     <option>Baja</option>
   </select>
 
+  <label>Asignado a</label>
   <select id="assignedTo">
     <option value="Procesos" selected>Procesos</option>
   </select>
@@ -84,19 +98,19 @@ const API = "https://report-system-ah71.onrender.com/reports";
 let openedDays = JSON.parse(localStorage.getItem("openedDays")) || {};
 let lastIds = new Set();
 
-// 🔔 NOTIFICACIONES COMO TENÍAS
+// 🔔 permisos
 if ("Notification" in window) {
   Notification.requestPermission();
 }
 
-// 🔊 SONIDO COMO TENÍAS
+// 🔊 sonido
 let notifSound;
 document.addEventListener("click", () => {
   notifSound = new Audio("https://www.myinstants.com/media/sounds/bell.mp3");
   notifSound.volume = 1.0;
 }, { once: true });
 
-// 🚨 ALERTA VISUAL COMO TENÍAS
+// 🚨 alerta visual
 function showAlert(text) {
   const alertBox = document.createElement("div");
 
@@ -116,18 +130,11 @@ function showAlert(text) {
   setTimeout(() => alertBox.remove(), 8000);
 }
 
-window.onload = () => {
-  loadReports();
-  setInterval(loadReports, 2000);
-};
-
+// acciones
 function askForAction(id, type) {
-  const action = prompt("Describe qué se hizo, cambió o por qué sigue pendiente");
+  const action = prompt("Describe qué se hizo o qué pasó");
 
-  if (!action) {
-    alert("Debes escribir qué pasó");
-    return;
-  }
+  if (!action) return;
 
   updateReport(id, type, action);
 }
@@ -152,6 +159,18 @@ async function updateReport(id, type, action) {
   loadReports();
 }
 
+// tiempo
+function timeAgo(date) {
+  const diff = Math.floor((new Date() - new Date(date)) / 60000);
+
+  if (diff < 1) return "Justo ahora";
+  if (diff < 60) return diff + " min atrás";
+
+  const h = Math.floor(diff / 60);
+  return h + " hr atrás";
+}
+
+// cargar
 async function loadReports() {
   const res = await fetch(API);
   const data = await res.json();
@@ -159,38 +178,77 @@ async function loadReports() {
   const list = document.getElementById("list");
   list.innerHTML = "";
 
+  const grouped = {};
+
   data.forEach(r => {
+    const date = new Date(r.createdAt).toLocaleDateString();
+    if (!grouped[date]) grouped[date] = [];
+    grouped[date].push(r);
+  });
 
-    // ✅ TU LÓGICA ORIGINAL RESTAURADA
-    if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
+  Object.keys(grouped).reverse().forEach(date => {
 
-      if (notifSound) {
-        notifSound.play().catch(() => {});
-      }
+    const section = document.createElement("div");
 
-      if (Notification.permission === "granted") {
-        new Notification("Nuevo reporte para Procesos", {
-          body: r.title
-        });
-      }
-
-      showAlert(r.title);
-    }
-
-    lastIds.add(r.id);
-
-    const div = document.createElement("div");
-    div.className = "report";
-
-    div.innerHTML = `
-      <b>${r.title}</b><br>
-      ${r.description}
+    section.innerHTML = `
+      <h3 style="cursor:pointer;">📅 ${date}</h3>
+      <div class="day-content"></div>
     `;
 
-    list.appendChild(div);
+    const content = section.querySelector(".day-content");
+    content.style.display = openedDays[date] ? "block" : "none";
+
+    grouped[date].reverse().forEach(r => {
+
+      // ✅ NOTIFICACIONES (tu lógica original)
+      if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
+
+        if (notifSound) notifSound.play().catch(() => {});
+
+        if (Notification.permission === "granted") {
+          new Notification("Nuevo reporte", {
+            body: r.title
+          });
+        }
+
+        showAlert(r.title);
+      }
+
+      lastIds.add(r.id);
+
+      const div = document.createElement("div");
+      div.className = "report";
+
+      div.innerHTML = `
+        <b>${r.title}</b> (${r.priority})<br>
+        ${r.description}<br>
+        <b>Estatus:</b> ${r.status}<br>
+
+        <div class="small">
+          ${timeAgo(r.createdAt)}<br>
+          ${r.actionTaken ? "🔧 " + r.actionTaken + "<br>" : ""}
+        </div>
+
+        <button onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
+        <button onclick="askForAction(${r.id}, 'not')">❌ No Resuelto</button>
+        <button onclick="askForAction(${r.id}, 'pending')">⏳ Pendiente</button>
+      `;
+
+      content.appendChild(div);
+    });
+
+    section.querySelector("h3").onclick = () => {
+      const isOpen = content.style.display === "none";
+      content.style.display = isOpen ? "block" : "none";
+      openedDays[date] = isOpen;
+      localStorage.setItem("openedDays", JSON.stringify(openedDays));
+    };
+
+    list.appendChild(section);
   });
 }
 
+// crear
 async function addReport() {
   const title = document.getElementById("title").value;
   const description = document.getElementById("desc").value;
@@ -217,6 +275,11 @@ async function addReport() {
 
   loadReports();
 }
+
+window.onload = () => {
+  loadReports();
+  setInterval(loadReports, 2000);
+};
 </script>
 
 </body>
