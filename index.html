@@ -159,7 +159,7 @@ async function updateReport(id, type, action) {
   loadReports();
 }
 
-// tiempo
+// tiempo relativo
 function timeAgo(date) {
   const diff = Math.floor((new Date() - new Date(date)) / 60000);
 
@@ -167,7 +167,20 @@ function timeAgo(date) {
   if (diff < 60) return diff + " min atrás";
 
   const h = Math.floor(diff / 60);
-  return h + " hr atrás";
+  if (h < 24) return h + " hr atrás";
+
+  const d = Math.floor(h / 24);
+  return d + " día(s)";
+}
+
+// tiempo de resolución
+function resolutionTime(start, end) {
+  if (!end) return "";
+
+  const diff = Math.floor((new Date(end) - new Date(start)) / 60000);
+
+  if (diff < 60) return diff + " min";
+  return Math.floor(diff / 60) + " hr";
 }
 
 // cargar
@@ -200,11 +213,9 @@ async function loadReports() {
 
     grouped[date].reverse().forEach(r => {
 
-      // ✅ NOTIFICACIONES (tu lógica original)
       if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
 
         if (notifSound) notifSound.play().catch(() => {});
-
         if (Notification.permission === "granted") {
           new Notification("Nuevo reporte", {
             body: r.title
@@ -225,8 +236,18 @@ async function loadReports() {
         <b>Estatus:</b> ${r.status}<br>
 
         <div class="small">
-          ${timeAgo(r.createdAt)}<br>
-          ${r.actionTaken ? "🔧 " + r.actionTaken + "<br>" : ""}
+          📅 Creado: ${new Date(r.createdAt).toLocaleString()}<br>
+          ⏱ ${timeAgo(r.createdAt)}<br>
+
+          ${r.resolvedAt 
+            ? `✅ Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
+            : ""}
+
+          ${r.resolvedAt 
+            ? `⏳ Tiempo resolución: ${resolutionTime(r.createdAt, r.resolvedAt)}<br>` 
+            : ""}
+
+          ${r.actionTaken ? `🔧 ${r.actionTaken}<br>` : ""}
         </div>
 
         <button onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
