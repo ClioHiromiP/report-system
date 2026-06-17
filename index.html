@@ -5,55 +5,123 @@
 
   <style>
     body {
-      font-family: Arial;
-      background-color: #f4f8fc;
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #e9f1fb 0%, #f7fafc 100%);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #1f2937;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    h1 {
-      color: #0f4c81;
-      text-align: center;
+      justify-content: center;
+      padding: 28px 16px 48px;
     }
 
     .container {
-      width: 500px;
-      background: white;
-      padding: 20px;
-      margin-top: 20px;
-      border-radius: 10px;
-      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+      width: min(1080px, 100%);
+      background: #ffffff;
+      padding: 28px 30px;
+      border-radius: 28px;
+      box-shadow: 0 30px 80px rgba(15, 76, 129, 0.14);
+      border: 1px solid rgba(15, 76, 129, 0.08);
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .page-header h1 {
+      margin: 0;
+      font-size: clamp(2rem, 2.6vw, 2.8rem);
+      letter-spacing: -0.03em;
+      color: #0f4c81;
+    }
+
+    .subtitle {
+      margin: 12px auto 0;
+      max-width: 720px;
+      color: #475569;
+      line-height: 1.7;
+      font-size: 1rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .form-grid > div {
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #334155;
     }
 
     input, textarea, select {
       width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      margin-bottom: 15px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #0f172a;
+      box-shadow: inset 0 1px 2px rgba(15,23,42,0.08);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      font-size: 1rem;
     }
 
-    button {
-      background-color: #0f4c81;
-      color: white;
-      padding: 8px;
-      margin-top: 5px;
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #0f4c81;
+      box-shadow: 0 0 0 4px rgba(15, 76, 129, 0.1);
+      background: #ffffff;
+    }
+
+    .primary-btn, .action-btn {
       border: none;
-      border-radius: 5px;
+      border-radius: 18px;
       cursor: pointer;
+      font-weight: 700;
+      transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .primary-btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
       width: 100%;
+      padding: 16px 22px;
+      background: #0f4c81;
+      color: #ffffff;
+      font-size: 1rem;
+      box-shadow: 0 18px 36px rgba(15, 76, 129, 0.18);
+    }
+
+    .primary-btn:hover {
+      background: #0b3a67;
+      transform: translateY(-1px);
     }
 
     .download-link {
-      display: inline-block;
-      margin-bottom: 10px;
-      padding: 8px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
       background-color: #0f4c81;
       color: white;
       text-decoration: none;
-      border-radius: 5px;
+      border-radius: 999px;
+      font-weight: 700;
+      box-shadow: 0 14px 28px rgba(15, 76, 129, 0.18);
     }
 
     .download-link:hover {
@@ -61,33 +129,74 @@
     }
 
     .report {
-      border-left: 5px solid #0f4c81;
-      background: #f9f9f9;
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 5px;
+      border-left: 4px solid rgba(15, 76, 129, 0.85);
+      background: #f8fafc;
+      margin-top: 18px;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 14px 30px rgba(15, 76, 129, 0.06);
+    }
+
+    .report b {
+      color: #0f4c81;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 14px 16px;
+      margin-top: 12px;
+      background: #1e3a8a;
+      color: #ffffff;
+      font-size: 0.95rem;
+    }
+
+    .action-btn:hover {
+      background: #16316d;
+      transform: translateY(-1px);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 18px;
+      background: #ffffff;
+      box-shadow: 0 20px 40px rgba(15, 76, 129, 0.08);
+      border-radius: 22px;
+      overflow: hidden;
     }
 
     th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
+      padding: 18px 16px;
       text-align: left;
+      border-bottom: 1px solid #e2e8f0;
     }
 
     th {
       background-color: #0f4c81;
       color: white;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.85rem;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+
+    tbody tr:hover {
+      background-color: #eef2ff;
+    }
+
+    .table-title {
+      margin: 0;
+      color: #0f4c81;
+      font-size: 1.25rem;
+      margin-top: 8px;
     }
 
     .small {
-      font-size: 12px;
-      color: gray;
+      font-size: 0.92rem;
+      color: #64748b;
     }
   </style>
 </head>
@@ -95,36 +204,52 @@
 <body>
 
 <div class="container">
-  <h1>Crear Reporte</h1>
+  <div class="page-header">
+    <h1>Sistema de Reportes</h1>
+    <p class="subtitle">Crea un nuevo reporte, revisa los existentes y descarga la información en formato Excel.</p>
+  </div>
 
-  <label>Tema</label>
-  <input id="title">
+  <div class="form-grid">
+    <div>
+      <label>Tema</label>
+      <input id="title" placeholder="Ingrese el título del reporte">
+    </div>
 
-  <label>Descripción</label>
-  <textarea id="desc"></textarea>
+    <div>
+      <label>Descripción</label>
+      <textarea id="desc" placeholder="Describe el problema o situación"></textarea>
+    </div>
 
-  <label>Importancia</label>
-  <select id="priority">
-    <option>Alta</option>
-    <option selected>Media</option>
-    <option>Baja</option>
-  </select>
+    <div>
+      <label>Importancia</label>
+      <select id="priority">
+        <option>Alta</option>
+        <option selected>Media</option>
+        <option>Baja</option>
+      </select>
+    </div>
 
-  <label>Asignado a</label>
-  <select id="assignedTo">
-    <option value="Procesos" selected>Procesos</option>
-  </select>
+    <div>
+      <label>Asignado a</label>
+      <select id="assignedTo">
+        <option value="Procesos" selected>Procesos</option>
+      </select>
+    </div>
+  </div>
 
-  <button onclick="addReport()">Enviar Reporte</button>
+  <button class="primary-btn" onclick="addReport()">Enviar Reporte</button>
 </div>
 
 <div class="container">
-  <h1>Reportes</h1>
-  <p><a id="downloadCsvLink" class="download-link" href="/reports.csv" download="reportes.csv">Descargar Excel (.csv)</a></p>
-  <div id="list"></div>
-  <div id="table-container"></div>
-</div>
+    <div class="page-header">
+      <h1>Reportes</h1>
+      <p class="subtitle">Mira todos los reportes en una tabla clara y descarga los datos en CSV cuando lo necesites.</p>
+    </div>
 
+    <p><a id="downloadCsvLink" class="download-link" href="/reports.csv" download="reportes.csv">Descargar Excel (.csv)</a></p>
+    <div id="table-container"></div>
+    <div id="list"></div>
+  </div>
 <script>
 const API = "/reports";
 
@@ -354,9 +479,9 @@ async function loadReports() {
           ${r.actionTaken ? `🔧 ${r.actionTaken}<br>` : ""}
         </div>
 
-        <button onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
-        <button onclick="askForAction(${r.id}, 'not')">❌ No Resuelto</button>
-        <button onclick="askForAction(${r.id}, 'pending')">⏳ Pendiente</button>
+        <button class="action-btn" onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
+        <button class="action-btn" onclick="askForAction(${r.id}, 'not')">❌ No Resuelto</button>
+        <button class="action-btn" onclick="askForAction(${r.id}, 'pending')">⏳ Pendiente</button>
       `;
 
       content.appendChild(div);
