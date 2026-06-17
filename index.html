@@ -48,10 +48,19 @@
       margin-bottom: 18px;
       border-bottom: 1px solid #e2e8f0;
       padding-bottom: 14px;
+      text-align: center;
+    }
+
+    .section-title {
+      margin: 0 auto;
+      font-size: 1.95rem;
+      color: #0f4c81;
+      letter-spacing: -0.02em;
+      max-width: fit-content;
     }
 
     .container + .container {
-      margin-top: 32px;
+      margin-top: 40px;
     }
 
     .form-grid {
@@ -238,8 +247,10 @@
   <button class="primary-btn" onclick="addReport()">Enviar Reporte</button>
 </div>
 
-<div class="container section-header">
-    <h2 class="section-title">Reportes</h2>
+<div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Reportes</h2>
+    </div>
     <div id="table-container"></div>
     <div id="list"></div>
   </div>
