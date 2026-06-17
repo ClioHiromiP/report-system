@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 
@@ -22,7 +23,7 @@ app.get("/", (req, res) => {
 });
 
 const DATA_FOLDER = "./data";
-const LOCAL_REPORTS_FILE = path.join(__dirname, "reports.json");
+const LOCAL_REPORTS_FILE = path.join(process.env.PRIVATE_TMP_DIR || os.tmpdir(), "reports.json");
 
 if (!fs.existsSync(DATA_FOLDER)) {
   fs.mkdirSync(DATA_FOLDER);
@@ -49,7 +50,11 @@ function readLocalReports() {
 function saveLocalReport(report) {
   const reports = readLocalReports();
   reports.push(report);
-  fs.writeFileSync(LOCAL_REPORTS_FILE, JSON.stringify(reports, null, 2));
+  try {
+    fs.writeFileSync(LOCAL_REPORTS_FILE, JSON.stringify(reports, null, 2));
+  } catch (err) {
+    console.error("Failed saving local report file:", err);
+  }
 }
 
 // ✅ GET (CAMBIO: ahora desde Supabase, con fallback local)
