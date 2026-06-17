@@ -11,7 +11,7 @@ app.use(express.json());
 // ✅ SUPABASE CONFIG
 const supabase = createClient(
   "https://kvtlthrvpkcniupkoocj.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dGx0aHJ2cGtjbml1cGtvb2NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE17..."
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2dGx0aHJ2cGtjbml1cGtvb2NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDEzMTIsImV4cCI6MjA5NzI3NzMxMn0.26UU5emj_hzxoZUhyJxr0DOEAE3refAJp7JbulQGyJU"
 );
 
 // ✅ servir frontend
@@ -23,69 +23,57 @@ app.get("/", (req, res) => {
 
 const DATA_FOLDER = "./data";
 
-// crear carpeta si no existe
 if (!fs.existsSync(DATA_FOLDER)) {
   fs.mkdirSync(DATA_FOLDER);
 }
 
-// 📅 archivo por día
 function getTodayFile() {
   const d = new Date();
   return path.join(
     DATA_FOLDER,
-    `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}.json`
+    `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}.json`
   );
 }
 
-// ✅ obtener todos
-app.get("/reports", (req, res) => {
-  let allReports = [];
+// ✅ GET (CAMBIO: ahora desde Supabase)
+app.get("/reports", async (req, res) => {
 
-  if (fs.existsSync(DATA_FOLDER)) {
-    const files = fs.readdirSync(DATA_FOLDER);
+  const { data, error } = await supabase
+    .from("reports")
+    .select("*")
+    .order("createdAt", { ascending: true });
 
-    files.forEach(file => {
-      const filePath = path.join(DATA_FOLDER, file);
-
-      if (fs.existsSync(filePath)) {
-        const content = fs.readFileSync(filePath);
-
-        if (content.length > 0) {
-          const data = JSON.parse(content);
-          allReports = allReports.concat(data);
-        }
-      }
-    });
+  if (error) {
+    console.error(error);
+    return res.status(500).json(error);
   }
 
-  res.json(allReports);
+  res.json(data);
 });
 
-// ✅ crear reporte
-app.post("/reports", (req, res) => {
-  const file = getTodayFile();
-  let reports = [];
-
-  if (fs.existsSync(file)) {
-    const content = fs.readFileSync(file);
-    if (content.length > 0) {
-      reports = JSON.parse(content);
-    }
-  }
+// ✅ POST (CAMBIO IMPORTANTE: ahora guarda en Supabase)
+app.post("/reports", async (req, res) => {
 
   const newReport = {
     id: Date.now(),
     ...req.body
   };
 
-  reports.push(newReport);
-  fs.writeFileSync(file, JSON.stringify(reports, null, 2));
+  const { error } = await supabase
+    .from("reports")
+    .insert([newReport]);
+
+  if (error) {
+    console.error(error);
+    return res.status(500).json(error);
+  }
 
   res.json(newReport);
 });
 
-// ✅ actualizar
+// ✅ UPDATE (dejas igual como lo tenías)
 app.put("/reports/:id", (req, res) => {
+
   if (!fs.existsSync(DATA_FOLDER)) {
     return res.sendStatus(200);
   }
@@ -114,4 +102,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
-``
