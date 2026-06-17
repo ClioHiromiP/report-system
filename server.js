@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
@@ -118,7 +118,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
-=======
+
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
@@ -238,4 +238,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
->>>>>>> d16ba1cbe14873b0c56ce03b60b7dd69eacdcf06

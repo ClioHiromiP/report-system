@@ -6,15 +6,8 @@
     "start": "node server.js"
   },
   "dependencies": {
-<<<<<<< HEAD
-    "@supabase/supabase-js": "^2.108.2",
+    "@supabase/supabase-js": "^2.0.0",
     "cors": "^2.8.5",
     "express": "^4.18.2"
   }
 }
-=======
-    "express": "^4.18.2",
-    "cors": "^2.8.5"
-  }
-}
->>>>>>> d16ba1cbe14873b0c56ce03b60b7dd69eacdcf06
