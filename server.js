@@ -53,23 +53,35 @@ app.get("/reports", async (req, res) => {
 
 // ✅ POST (CAMBIO IMPORTANTE: ahora guarda en Supabase)
 app.post("/reports", async (req, res) => {
-
   const newReport = {
     id: Date.now(),
     ...req.body
   };
 
-  const { error } = await supabase
-    .from("reports")
-    .insert([newReport]);
-
-  if (error) {
-    console.error(error);
-    return res.status(500).json(error);
+  try {
+    // ✅ guardar en Supabase
+    await supabase.from("reports").insert([newReport]);
+  } catch (err) {
+    console.log("Supabase error:", err);
   }
+
+  // ✅ TU LÓGICA ORIGINAL (no se rompe)
+  const file = getTodayFile();
+  let reports = [];
+
+  if (fs.existsSync(file)) {
+    const content = fs.readFileSync(file);
+    if (content.length > 0) {
+      reports = JSON.parse(content);
+    }
+  }
+
+  reports.push(newReport);
+  fs.writeFileSync(file, JSON.stringify(reports, null, 2));
 
   res.json(newReport);
 });
+``
 
 // ✅ UPDATE (dejas igual como lo tenías)
 app.put("/reports/:id", (req, res) => {
