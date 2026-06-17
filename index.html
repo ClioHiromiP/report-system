@@ -98,7 +98,7 @@ const API = "https://report-system-ah71.onrender.com/reports";
 let openedDays = JSON.parse(localStorage.getItem("openedDays")) || {};
 let lastIds = new Set();
 
-// 🔔 permisos
+//  permisos
 if ("Notification" in window) {
   Notification.requestPermission();
 }
@@ -204,7 +204,7 @@ async function loadReports() {
     const section = document.createElement("div");
 
     section.innerHTML = `
-      <h3 style="cursor:pointer;">📅 ${date}</h3>
+      <h3 style="cursor:pointer;"> ${date}</h3>
       <div class="day-content"></div>
     `;
 
@@ -236,15 +236,15 @@ async function loadReports() {
         <b>Estatus:</b> ${r.status}<br>
 
         <div class="small">
-          📅 Creado: ${new Date(r.createdAt).toLocaleString()}<br>
+           Creado: ${new Date(r.createdAt).toLocaleString()}<br>
           ⏱ ${timeAgo(r.createdAt)}<br>
 
           ${r.resolvedAt 
-            ? `✅ Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
+            ? ` Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
             : ""}
 
           ${r.resolvedAt 
-            ? `⏳ Tiempo resolución: ${resolutionTime(r.createdAt, r.resolvedAt)}<br>` 
+            ? ` Tiempo resolución: ${resolutionTime(r.createdAt, r.resolvedAt)}<br>` 
             : ""}
 
           ${r.actionTaken ? `🔧 ${r.actionTaken}<br>` : ""}
