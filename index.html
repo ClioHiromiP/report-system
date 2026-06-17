@@ -68,6 +68,23 @@
       border-radius: 5px;
     }
 
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #0f4c81;
+      color: white;
+    }
+
     .small {
       font-size: 12px;
       color: gray;
@@ -105,6 +122,7 @@
   <h1>Reportes</h1>
   <p><a id="downloadCsvLink" class="download-link" href="/reports.csv" download="reportes.csv">Descargar Excel (.csv)</a></p>
   <div id="list"></div>
+  <div id="table-container"></div>
 </div>
 
 <script>
@@ -213,7 +231,53 @@ function resolutionTime(start, end) {
   if (diff < 60) return diff + " min";
   return Math.floor(diff / 60) + " hr";
 }
+function renderReportsTable(reports) {
+  const container = document.getElementById("table-container");
+  if (!container) return;
 
+  if (!Array.isArray(reports) || reports.length === 0) {
+    container.innerHTML = "<p>No hay reportes para mostrar en tabla.</p>";
+    return;
+  }
+
+  const rows = reports
+    .map(r => `
+      <tr>
+        <td>${r.id || ""}</td>
+        <td>${r.title || ""}</td>
+        <td>${r.description || ""}</td>
+        <td>${r.priority || ""}</td>
+        <td>${r.assignedTo || ""}</td>
+        <td>${r.status || ""}</td>
+        <td>${new Date(r.createdAt).toLocaleString() || ""}</td>
+        <td>${r.resolvedAt ? new Date(r.resolvedAt).toLocaleString() : ""}</td>
+        <td>${r.actionTaken || ""}</td>
+      </tr>
+    `)
+    .join("");
+
+  container.innerHTML = `
+    <h2>Reportes en tabla</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Tema</th>
+          <th>Descripción</th>
+          <th>Importancia</th>
+          <th>Asignado a</th>
+          <th>Estatus</th>
+          <th>Creado</th>
+          <th>Resuelto</th>
+          <th>Acción tomada</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  `;
+}
 // cargar
 async function loadReports() {
   const res = await fetch(API);
@@ -222,6 +286,8 @@ async function loadReports() {
   if (!Array.isArray(data)) {
     data = [];
   }
+
+  renderReportsTable(data);
 
   const list = document.getElementById("list");
   list.innerHTML = "";
