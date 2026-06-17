@@ -68,7 +68,7 @@ app.post("/reports", (req, res) => {
 
   // ✅ SIEMPRE RESPONDE (esto arregla el freeze)
   res.json(newReport);
-});
+
 ``
 
 // ✅ UPDATE (dejas igual como lo tenías)
