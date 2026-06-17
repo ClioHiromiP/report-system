@@ -22,6 +22,7 @@ app.get("/", (req, res) => {
 });
 
 const DATA_FOLDER = "./data";
+const LOCAL_REPORTS_FILE = path.join(__dirname, "reports.json");
 
 if (!fs.existsSync(DATA_FOLDER)) {
   fs.mkdirSync(DATA_FOLDER);
@@ -35,33 +36,65 @@ function getTodayFile() {
   );
 }
 
-// ✅ GET (CAMBIO: ahora desde Supabase)
-app.get("/reports", async (req, res) => {
-
-  const { data, error } = await supabase
-    .from("reports")
-    .select("*")
-    .order("createdAt", { ascending: true });
-
-  if (error) {
-    console.error(error);
-    return res.status(500).json(error);
+function readLocalReports() {
+  if (!fs.existsSync(LOCAL_REPORTS_FILE)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(LOCAL_REPORTS_FILE, "utf8"));
+  } catch (err) {
+    console.error("Failed reading local reports file:", err);
+    return [];
   }
+}
 
-  res.json(data);
+function saveLocalReport(report) {
+  const reports = readLocalReports();
+  reports.push(report);
+  fs.writeFileSync(LOCAL_REPORTS_FILE, JSON.stringify(reports, null, 2));
+}
+
+// ✅ GET (CAMBIO: ahora desde Supabase, con fallback local)
+app.get("/reports", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("reports")
+      .select("*")
+      .order("createdAt", { ascending: true });
+
+    if (error) {
+      console.error("Supabase GET error:", error);
+      return res.json(readLocalReports());
+    }
+
+    if (!Array.isArray(data)) {
+      console.error("Supabase GET returned invalid data:", data);
+      return res.json(readLocalReports());
+    }
+
+    return res.json(data);
+  } catch (error) {
+    console.error("Supabase GET exception:", error);
+    return res.json(readLocalReports());
+  }
 });
 
-// ✅ POST (CAMBIO IMPORTANTE: ahora guarda en Supabase)
-app.post("/reports", (req, res) => {
+// ✅ POST (CAMBIO IMPORTANTE: ahora guarda en Supabase, with local fallback)
+app.post("/reports", async (req, res) => {
   const newReport = {
     id: Date.now(),
     ...req.body
   };
 
   res.json(newReport);
+  saveLocalReport(newReport);
 
-  supabase.from("reports").insert([newReport])
-    .catch(err => console.log("Supabase error:", err));
+  try {
+    const { error } = await supabase.from("reports").insert([newReport]);
+    if (error) {
+      console.error("Supabase POST error:", error);
+    }
+  } catch (err) {
+    console.error("Supabase POST exception:", err);
+  }
 });
 
 // ✅ UPDATE (dejas igual como lo tenías)

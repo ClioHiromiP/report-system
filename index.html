@@ -271,8 +271,8 @@ async function loadReports() {
 
 // crear
 async function addReport() {
-  const title = document.getElementById("title").value;
-  const description = document.getElementById("desc").value;
+  const title = document.getElementById("title").value.trim();
+  const description = document.getElementById("desc").value.trim();
   const priority = document.getElementById("priority").value;
   const assignedTo = document.getElementById("assignedTo").value;
 
@@ -281,20 +281,35 @@ async function addReport() {
     return;
   }
 
-  await fetch(API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title,
-      description,
-      priority,
-      assignedTo,
-      status: "Pending",
-      createdAt: new Date().toISOString()
-    })
-  });
+  try {
+    const response = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        description,
+        priority,
+        assignedTo,
+        status: "Pending",
+        createdAt: new Date().toISOString()
+      })
+    });
 
-  loadReports();
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error al enviar reporte: ${response.status} ${errorText}`);
+    }
+
+    document.getElementById("title").value = "";
+    document.getElementById("desc").value = "";
+    document.getElementById("priority").selectedIndex = 1;
+    document.getElementById("assignedTo").selectedIndex = 0;
+
+    loadReports();
+  } catch (error) {
+    console.error(error);
+    alert(`No se pudo enviar el reporte. Revisa la consola y asegúrate de abrir el app desde el servidor.`);
+  }
 }
 
 window.onload = () => {

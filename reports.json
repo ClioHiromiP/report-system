@@ -25,5 +25,32 @@
     "status": "Resolved",
     "createdAt": "2026-06-16T18:01:12.651Z",
     "resolvedAt": "2026-06-16T18:02:25.287Z"
+  },
+  {
+    "id": 1781719047989,
+    "title": "Prueba UI",
+    "description": "Esto debería enviar.",
+    "priority": "Media",
+    "assignedTo": "Procesos",
+    "status": "Pending",
+    "createdAt": "2026-06-17T17:57:27.960Z"
+  },
+  {
+    "id": 1781719077788,
+    "title": "55",
+    "description": "55",
+    "priority": "Media",
+    "assignedTo": "Procesos",
+    "status": "Pending",
+    "createdAt": "2026-06-17T17:57:54.803Z"
+  },
+  {
+    "id": 1781719079692,
+    "title": "55",
+    "description": "55",
+    "priority": "Media",
+    "assignedTo": "Procesos",
+    "status": "Pending",
+    "createdAt": "2026-06-17T17:57:56.615Z"
   }
 ]
