@@ -58,18 +58,11 @@ app.post("/reports", (req, res) => {
     ...req.body
   };
 
-  // ✅ RESPONDER INMEDIATO (esto desbloquea el botón)
   res.json(newReport);
 
-  // 🔽 TODO LO DEMÁS DESPUÉS (sin bloquear)
   supabase.from("reports").insert([newReport])
     .catch(err => console.log("Supabase error:", err));
 });
-
-  // ✅ SIEMPRE RESPONDE (esto arregla el freeze)
-  res.json(newReport);
-
-``
 
 // ✅ UPDATE (dejas igual como lo tenías)
 app.put("/reports/:id", (req, res) => {
