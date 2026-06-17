@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sistema de Reportes</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background-color: #f4f8fc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: #0f4c81;
+      text-align: center;
+    }
+
+    .container {
+      width: 500px;
+      background: white;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #0f4c81;
+      color: white;
+      padding: 8px;
+      margin-top: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .report {
+      border-left: 5px solid #0f4c81;
+      background: #f9f9f9;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: gray;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>Crear Reporte</h1>
+
+  <label>Tema</label>
+  <input id="title">
+
+  <label>Descripción</label>
+  <textarea id="desc"></textarea>
+
+  <label>Importancia</label>
+  <select id="priority">
+    <option>Alta</option>
+    <option selected>Media</option>
+    <option>Baja</option>
+  </select>
+
+  <label>Asignado a</label>
+  <select id="assignedTo">
+    <option value="Procesos" selected>Procesos</option>
+  </select>
+
+  <button onclick="addReport()">Enviar Reporte</button>
+</div>
+
+<div class="container">
+  <h1>Reportes</h1>
+  <div id="list"></div>
+</div>
+
+<script>
+const API = "https://report-system-ah71.onrender.com/reports";
+
+let openedDays = JSON.parse(localStorage.getItem("openedDays")) || {};
+let lastIds = new Set();
+
+//  permisos
+if ("Notification" in window) {
+  Notification.requestPermission();
+}
+
+// 🔊 sonido
+let notifSound;
+document.addEventListener("click", () => {
+  notifSound = new Audio("https://www.myinstants.com/media/sounds/bell.mp3");
+  notifSound.volume = 1.0;
+}, { once: true });
+
+// 🚨 alerta visual
+function showAlert(text) {
+  const alertBox = document.createElement("div");
+
+  alertBox.innerHTML = "🚨 NUEVO REPORTE PARA PROCESOS 🚨<br>" + text;
+
+  alertBox.style.position = "fixed";
+  alertBox.style.top = "20px";
+  alertBox.style.right = "20px";
+  alertBox.style.background = "red";
+  alertBox.style.color = "white";
+  alertBox.style.padding = "15px";
+  alertBox.style.borderRadius = "10px";
+  alertBox.style.zIndex = "9999";
+
+  document.body.appendChild(alertBox);
+
+  setTimeout(() => alertBox.remove(), 8000);
+}
+
+// acciones
+function askForAction(id, type) {
+  const action = prompt("Describe qué se hizo o qué pasó");
+
+  if (!action) return;
+
+  updateReport(id, type, action);
+}
+
+async function updateReport(id, type, action) {
+  let status = "Pending";
+
+  if (type === "resolved") status = "Resolved";
+  if (type === "not") status = "Not Resolved";
+  if (type === "pending") status = "Pending";
+
+  await fetch(API + "/" + id, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      status,
+      resolvedAt: new Date().toISOString(),
+      actionTaken: action
+    })
+  });
+
+  loadReports();
+}
+
+// tiempo relativo
+function timeAgo(date) {
+  const diff = Math.floor((new Date() - new Date(date)) / 60000);
+
+  if (diff < 1) return "Justo ahora";
+  if (diff < 60) return diff + " min atrás";
+
+  const h = Math.floor(diff / 60);
+  if (h < 24) return h + " hr atrás";
+
+  const d = Math.floor(h / 24);
+  return d + " día(s)";
+}
+
+// tiempo de resolución
+function resolutionTime(start, end) {
+  if (!end) return "";
+
+  const diff = Math.floor((new Date(end) - new Date(start)) / 60000);
+
+  if (diff < 60) return diff + " min";
+  return Math.floor(diff / 60) + " hr";
+}
+
+// cargar
+async function loadReports() {
+  const res = await fetch(API);
+  const data = await res.json();
+
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  const grouped = {};
+
+  data.forEach(r => {
+    const date = new Date(r.createdAt).toLocaleDateString();
+    if (!grouped[date]) grouped[date] = [];
+    grouped[date].push(r);
+  });
+
+  Object.keys(grouped).reverse().forEach(date => {
+
+    const section = document.createElement("div");
+
+    section.innerHTML = `
+      <h3 style="cursor:pointer;"> ${date}</h3>
+      <div class="day-content"></div>
+    `;
+
+    const content = section.querySelector(".day-content");
+    content.style.display = openedDays[date] ? "block" : "none";
+
+    grouped[date].reverse().forEach(r => {
+
+      if (!lastIds.has(r.id) && r.assignedTo === "Procesos") {
+
+        if (notifSound) notifSound.play().catch(() => {});
+        if (Notification.permission === "granted") {
+          new Notification("Nuevo reporte", {
+            body: r.title
+          });
+        }
+
+        showAlert(r.title);
+      }
+
+      lastIds.add(r.id);
+
+      const div = document.createElement("div");
+      div.className = "report";
+
+      div.innerHTML = `
+        <b>${r.title}</b> (${r.priority})<br>
+        ${r.description}<br>
+        <b>Estatus:</b> ${r.status}<br>
+
+        <div class="small">
+           Creado: ${new Date(r.createdAt).toLocaleString()}<br>
+          ⏱ ${timeAgo(r.createdAt)}<br>
+
+          ${r.resolvedAt 
+            ? ` Resuelto: ${new Date(r.resolvedAt).toLocaleString()}<br>` 
+            : ""}
+
+          ${r.resolvedAt 
+            ? ` Tiempo resolución: ${resolutionTime(r.createdAt, r.resolvedAt)}<br>` 
+            : ""}
+
+          ${r.actionTaken ? `🔧 ${r.actionTaken}<br>` : ""}
+        </div>
+
+        <button onclick="askForAction(${r.id}, 'resolved')">✅ Resuelto</button>
+        <button onclick="askForAction(${r.id}, 'not')">❌ No Resuelto</button>
+        <button onclick="askForAction(${r.id}, 'pending')">⏳ Pendiente</button>
+      `;
+
+      content.appendChild(div);
+    });
+
+    section.querySelector("h3").onclick = () => {
+      const isOpen = content.style.display === "none";
+      content.style.display = isOpen ? "block" : "none";
+      openedDays[date] = isOpen;
+      localStorage.setItem("openedDays", JSON.stringify(openedDays));
+    };
+
+    list.appendChild(section);
+  });
+}
+
+// crear
+async function addReport() {
+  const title = document.getElementById("title").value;
+  const description = document.getElementById("desc").value;
+  const priority = document.getElementById("priority").value;
+  const assignedTo = document.getElementById("assignedTo").value;
+
+  if (!title || !description) {
+    alert("Llena todos los campos");
+    return;
+  }
+
+  await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title,
+      description,
+      priority,
+      assignedTo,
+      status: "Pending",
+      createdAt: new Date().toISOString()
+    })
+  });
+
+  loadReports();
+}
+
+window.onload = () => {
+  loadReports();
+  setInterval(loadReports, 2000);
+};
+</script>
+
+</body>
+</html>
